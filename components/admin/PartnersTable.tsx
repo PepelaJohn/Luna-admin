@@ -1,0 +1,99 @@
+
+
+// ===========================================
+// FILE: src/components/admin/PartnersTable.tsx
+// ===========================================
+'use client';
+
+import React from 'react';
+import { Partner } from '@/lib/types';
+import { 
+  CheckCircle, 
+  Clock, 
+  AlertCircle, 
+  XCircle 
+} from 'lucide-react';
+
+interface PartnersTableProps {
+  partners: Partner[];
+  isCompact?: boolean;
+}
+
+const PartnersTable: React.FC<PartnersTableProps> = ({ partners, isCompact = false }) => {
+  const getStatusColor = (status: Partner['status']) => {
+    switch (status) {
+      case 'approved': return 'text-green-600 bg-green-100';
+      case 'pending': return 'text-yellow-600 bg-yellow-100';
+      case 'reviewing': return 'text-blue-600 bg-blue-100';
+      case 'rejected': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const getStatusIcon = (status: Partner['status']) => {
+    switch (status) {
+      case 'approved': return <CheckCircle className="w-4 h-4" />;
+      case 'pending': return <Clock className="w-4 h-4" />;
+      case 'reviewing': return <AlertCircle className="w-4 h-4" />;
+      case 'rejected': return <XCircle className="w-4 h-4" />;
+      default: return <AlertCircle className="w-4 h-4" />;
+    }
+  };
+
+  if (isCompact) {
+    return (
+      <div className="space-y-3">
+        {partners.map((partner) => (
+          <div key={partner._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-gray-900 truncate text-sm lg:text-base">{partner.companyName}</p>
+              <p className="text-xs lg:text-sm text-gray-500 capitalize">{partner.industry}</p>
+            </div>
+            <div className={`flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(partner.status)}`}>
+              {getStatusIcon(partner.status)}
+              <span className="ml-1 capitalize">{partner.status}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Industry</th>
+            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {partners.map((partner) => (
+            <tr key={partner._id} className="hover:bg-gray-50">
+              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                <div className="font-medium text-gray-900 text-sm lg:text-base">{partner.companyName}</div>
+              </td>
+              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-500 capitalize">{partner.industry}</div>
+              </td>
+              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(partner.status)}`}>
+                  {getStatusIcon(partner.status)}
+                  <span className="ml-1 capitalize">{partner.status}</span>
+                </div>
+              </td>
+              <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {partner.submittedAt.toLocaleDateString()}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default PartnersTable;

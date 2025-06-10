@@ -6,9 +6,26 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+
+@layer{
+  .primary-btn-bg {
+    @apply bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-xl hover:from-yellow-500 hover:via-orange-600 hover:to-red-600
+  }
+  
+  .text-primary-color{
+    @apply bg-clip-text text-transparent  bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-xl hover:from-yellow-500 hover:via-orange-600 hover:to-red-600
+  }
+}
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  .primary-btn-bg {
+    @apply bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-xl hover:from-yellow-500 hover:via-orange-600 hover:to-red-600
+  }
+  
+  .text-primary-color{
+    @apply bg-clip-text text-transparent  bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-xl hover:from-yellow-500 hover:via-orange-600 hover:to-red-600
   }
 }
 
