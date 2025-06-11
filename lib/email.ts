@@ -2,6 +2,8 @@
 
 // @/lib/email.ts
 import { Resend } from 'resend';
+import { getEnvironmentVariable } from './utils';
+import { EmailVerificationTemplate } from '@/components/EmailTemplate';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -51,6 +53,23 @@ export async function sendPasswordResetEmail(email: string, code: string) {
     console.error('Failed to send password reset email:', error);
     throw new Error('Failed to send password reset email');
   }
+}
+
+export async function sendConfirmationStartupEmail({email, token, name}:{email:string, token: string, name:string}) {
+  const confirmationUrl = `${getEnvironmentVariable('APP_ORIGIN')}/email/verify?token=${token}`;
+  const { data, error } = await resend.emails.send({
+    from: "LunaDrone <verification@lunadrone.com>",
+    to: [email],
+    subject: "Confirm your Email",
+    react: EmailVerificationTemplate({  confirmationUrl, username: name, }),
+    headers: {
+      'List-Unsubscribe': `<${confirmationUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+    }
+  });
+
+  if (error) throw error;
+  return data;
 }
 
 

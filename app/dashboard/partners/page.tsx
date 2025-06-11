@@ -49,8 +49,8 @@ const partners: Partner[] = [
 ];
 
 export default function Patners(): React.ReactNode {
-  return <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-    <div className="p-4 lg:p-6 border-b">
+  return <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="p-4 lg:p-6 border-b border-gray-200">
       <h3 className="text-lg font-semibold">
         Partner Applications
       </h3>

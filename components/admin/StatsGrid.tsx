@@ -27,7 +27,7 @@ interface StatsGridProps {
 const StatsGrid: React.FC<StatsGridProps> = ({ stats }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-      <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border">
+      <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-600">Total Partners</p>
@@ -44,7 +44,7 @@ const StatsGrid: React.FC<StatsGridProps> = ({ stats }) => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border">
+      <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-600">Pending Approval</p>
@@ -56,7 +56,7 @@ const StatsGrid: React.FC<StatsGridProps> = ({ stats }) => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border">
+      <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-600">Total Subscribers</p>
@@ -68,7 +68,7 @@ const StatsGrid: React.FC<StatsGridProps> = ({ stats }) => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border">
+      <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-600">Confirmed</p>

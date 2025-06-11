@@ -9,9 +9,10 @@ import { useLogs } from "@/hooks/useLogs";
 import { useSubscribers } from "@/hooks/useSubscribers";
 import Link from "next/link";
 import React from "react";
+import { Loading } from "./logs/page";
 
 const DashBoardHomepage = () => {
-  const { users } = useData();
+  const { users, loading } = useData();
   const {  totalSubs } = useSubscribers();
   const { logs } = useLogs();
 
@@ -91,26 +92,26 @@ const DashBoardHomepage = () => {
 
       {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold mb-4">
             Recent Partner Applications
           </h3>
           <PartnersTable partners={mockData.partners.slice(0, 3)} isCompact />
         </div>
 
-        <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold mb-4">Recent Subscribers</h3>
           <SubscribersTable  isCompact />
         </div>
 
-        <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold mb-4">Recent Users</h3>
-          <UsersTable users={users?.slice(0, 5) || []} isCompact />
+        {  loading ? <Loading></Loading> : <UsersTable users={users?.slice(0, 5) || []} isCompact />}
         </div>
       </div>
 
       {/* Recent Logs Section */}
-      <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border">
+      <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Recent Activity Logs</h3>
           <Link 
@@ -121,7 +122,7 @@ const DashBoardHomepage = () => {
             View All Logs
           </Link>
         </div>
-        <LogsTable logs={logs?.slice(0, 5) || []} isCompact />
+        <LogsTable logs={logs?.slice(0, 3) || []} isCompact />
       </div>
     </div>
   );

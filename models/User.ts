@@ -5,7 +5,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password?: string;
-  role: 'normal' | 'corporate' | 'admin';
+  role: 'normal' | 'corporate' | 'admin' | 'super_admin';
   isEmailVerified: boolean;
   isActive:boolean;
   providers: {
@@ -49,7 +49,7 @@ const UserSchema = new Schema<IUser>({
     unique: true,
     lowercase: true,
     trim: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,})+$/, 'Please enter a valid email']
   },
   phone: {
     type: mongoose.Schema.Types.Mixed
@@ -61,7 +61,7 @@ const UserSchema = new Schema<IUser>({
   },
   role: {
     type: String,
-    enum: ['normal', 'corporate', 'admin'],
+    enum: ['normal', 'corporate', 'admin', 'super_admin'],
     default: 'normal'
   },
   isEmailVerified: {

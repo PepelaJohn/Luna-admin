@@ -9,7 +9,6 @@ import mongoose, { Document } from "mongoose";
 export interface verificationCodeDocument extends Document {
   userId: mongoose.Types.ObjectId;
   type: VerificationCodeType;
-  code: string; // Added code field
   createdAt: Date;
   updatedAt: Date;
   expiresAt: Date;
@@ -28,11 +27,7 @@ const verificationCodeSchema = new mongoose.Schema<verificationCodeDocument>(
       required: true,
       enum: Object.values(VerificationCodeType),
     },
-    code: {
-      type: String,
-      required: true,
-      length: 6,
-    },
+   
     expiresAt: {
       type: Date,
       required: true,

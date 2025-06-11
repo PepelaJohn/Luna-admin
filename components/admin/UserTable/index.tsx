@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { User, Pagination } from "@/lib/types";
 import {
-  UserIcon,
+  User as UserIcon,
   Mail,
   Phone,
   Calendar,
@@ -15,11 +14,77 @@ import {
   ChevronLeft,
   ChevronRight,
   MoreVertical,
-  FileWarningIcon,
-  DeleteIcon,
   Loader2,
+  X,
+  Save,
+  AlertCircle,
+  CheckCircle,
+  Info,
 } from "lucide-react";
-import { useData } from "@/hooks/useData";
+
+// shadcn/ui imports
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Alert,
+  AlertDescription,
+} from "@/components/ui/alert";
+import { Loading } from "@/app/dashboard/logs/page";
+import { usersApi } from "@/lib/api";
+import { EditingUserPopup } from "./EditingUserPopup";
+
+// Mock types - replace with your actual types
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: "normal" | "corporate" | "admin" | "super_admin";
+  isEmailVerified: boolean;
+  isActive: boolean;
+  avatar?: string;
+  createdAt: string;
+  lastLogin?: Date;
+}
+
+interface Pagination {
+  page: number;
+  pages: number;
+  limit: number;
+  total: number;
+}
 
 interface UsersTableProps {
   users: User[];
@@ -29,22 +94,41 @@ interface UsersTableProps {
   onUserUpdate?: (userId: string, updates: Partial<User>) => void;
 }
 
+export interface FormErrors {
+  name?: string;
+  email?: string;
+  phone?: string;
+  general?: string;
+}
+
+// Mock data for demonstration
+
+
+const mockPagination: Pagination = {
+  page: 1,
+  pages: 3,
+  limit: 10,
+  total: 25,
+};
+
 const UsersTable: React.FC<UsersTableProps> = ({
-  users,
-  pagination,
+  users ,
+  pagination = mockPagination,
   isCompact = false,
   onPageChange,
-  onUserUpdate,
+ 
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState<
-    "all" | "normal" | "corporate" | "admin"
-  >("all");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
   const [deleting, setDeleting] = useState({ status: false, id: "" });
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const { deleteUser, loading } = useData();
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<User>>({});
+  const [originalFormData, setOriginalFormData] = useState<Partial<User>>({});
+  const [loading, setLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [successMessage, setSuccessMessage] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
 
-  // ✅ Fixed: Use useMemo for filtering with proper dependencies
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
       const matchesSearch =
@@ -57,54 +141,66 @@ const UsersTable: React.FC<UsersTableProps> = ({
     });
   }, [users, searchTerm, roleFilter]);
 
+  // Check for changes in form data
+  useEffect(() => {
+    if (!editingUser || !originalFormData) return;
+
+    const changes = Object.keys(editFormData).some(key => {
+      const currentValue = editFormData[key as keyof User];
+      const originalValue = originalFormData[key as keyof User];
+      return currentValue !== originalValue;
+    });
+
+    setHasChanges(changes);
+  }, [editFormData, originalFormData, editingUser]);
+
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
+
+    if (!editFormData.name?.trim()) {
+      errors.name = "Name is required";
+    } else if (editFormData.name.trim().length < 2) {
+      errors.name = "Name must be at least 2 characters";
+    }
+
+    if (!editFormData.email?.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editFormData.email)) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    if (editFormData.phone && editFormData.phone.trim() && !/^[\+]?[1-9][\d]{0,15}$/.test(editFormData.phone.replace(/\s/g, ''))) {
+      errors.phone = "Please enter a valid phone number";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const getRoleBadge = (role: User["role"]) => {
     const roleConfig = {
-      admin: {
-        color: "bg-red-100 text-red-700",
-        icon: ShieldCheck,
-        label: "Admin",
-      },
-      corporate: {
-        color: "bg-blue-100 text-blue-700",
-        icon: Shield,
-        label: "Corporate",
-      },
-      normal: {
-        color: "bg-green-100 text-green-700",
-        icon: UserIcon,
-        label: "User",
-      },
-      super_admin: {
-        color: "bg-green-300 text-green-700",
-        icon: UserIcon,
-        label: "Super Admin",
-      },
+      admin: { variant: "destructive" as const, label: "Admin", icon: ShieldCheck },
+      corporate: { variant: "default" as const, label: "Corporate", icon: Shield },
+      normal: { variant: "secondary" as const, label: "User", icon: UserIcon },
+      super_admin: { variant: "outline" as const, label: "Super Admin", icon: ShieldCheck },
     };
 
     const config = roleConfig[role];
     const Icon = config.icon;
 
     return (
-      <span
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}
-      >
+      <Badge variant={config.variant} className="flex text-black items-center gap-1">
         <Icon className="w-3 h-3" />
         {config.label}
-      </span>
+      </Badge>
     );
   };
 
   const getVerificationStatus = (isVerified: boolean) => {
     return (
-      <span
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-          isVerified
-            ? "bg-green-100 text-green-700"
-            : "bg-yellow-100 text-yellow-700"
-        }`}
-      >
+      <Badge variant={isVerified ? "default" : "secondary"}>
         {isVerified ? "✓ Verified" : "⚠ Pending"}
-      </span>
+      </Badge>
     );
   };
 
@@ -116,30 +212,194 @@ const UsersTable: React.FC<UsersTableProps> = ({
     });
   };
 
-  const handleRoleChange = async (userId: string, newRole: User["role"]) => {
-    if (onUserUpdate) {
-      await onUserUpdate(userId, { role: newRole });
-    }
-    setActiveDropdown(null);
-  };
-
-  // ✅ Fixed: Better delete handler
   const handleDeleteUser = async (userId: string) => {
+    setLoading(true);
     try {
-      const result = await deleteUser(userId);
-      if (result?.success) {
+      
+      const response = await usersApi.deleteUser(deleting.id)
+      if(response.success){
+
         setDeleting({ status: false, id: "" });
-        // Optionally show success message
       }
     } catch (error) {
       console.error("Delete failed:", error);
-      // Handle error appropriately
+    } finally {
+      setLoading(false);
+        setDeleting({ status: false, id: "" });
     }
   };
 
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    const formData = {
+      name: user.name,
+      email: user.email,
+      phone: user.phone || "",
+      role: user.role,
+      isEmailVerified: user.isEmailVerified,
+      isActive: user.isActive,
+    };
+    setEditFormData(formData);
+    setOriginalFormData(formData);
+    setFormErrors({});
+    setSuccessMessage("");
+    setHasChanges(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return;
+
+    // Clear previous messages
+    setFormErrors({});
+    setSuccessMessage("");
+
+    // Check if there are any changes
+    if (!hasChanges) {
+      setFormErrors({ general: "No changes detected. Please modify at least one field before saving." });
+      return;
+    }
+
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await usersApi.updateUser({
+        id: editingUser._id, 
+        updateUserData: editFormData
+      });
+      
+      console.log(response);
+      
+      if (response.success) {
+        setSuccessMessage(response.message || "User updated successfully!");
+        // Close modal after 1.5 seconds to show success message
+        setTimeout(() => {
+          setEditingUser(null);
+          setEditFormData({});
+          setOriginalFormData({});
+          setSuccessMessage("");
+        }, 1500);
+      } else {
+        setFormErrors({ general: response.message || "Failed to update user. Please try again." });
+      }
+    } catch (error: any) {
+      console.error("Update failed:", error);
+      setFormErrors({ 
+        general: error?.response?.data?.message || "An error occurred while updating the user. Please try again." 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingUser(null);
+    setEditFormData({});
+    setOriginalFormData({});
+    setFormErrors({});
+    setSuccessMessage("");
+    setHasChanges(false);
+  };
+
+  const handleInputChange = (field: keyof User, value: any) => {
+    setEditFormData({ ...editFormData, [field]: value });
+    // Clear field-specific error when user starts typing
+    if (formErrors[field as keyof FormErrors]) {
+      setFormErrors({ ...formErrors, [field]: undefined });
+    }
+    // Clear general error when user makes changes
+    if (formErrors.general) {
+      setFormErrors({ ...formErrors, general: undefined });
+    }
+  };
+
+  // Mobile Card Component
+  const MobileUserCard = ({ user }: { user: User }) => (
+    <Card className="mb-4 border-gray-200 rounded-none">
+      <CardContent className="p-4 border-none">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) : (
+                <span className="text-white font-medium">
+                  {user.name.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-semibold text-gray-900 truncate">{user.name}</h3>
+              <p className="text-sm text-gray-500 truncate">{user.email}</p>
+              {!user.isActive && (
+                <span className="text-xs text-red-600 font-medium">Inactive</span>
+              )}
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                <Edit2 className="w-4 h-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => setDeleting({ status: true, id: user._id })}
+                className="text-red-600"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-500">Role:</span>
+            {getRoleBadge(user.role)}
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-500">Status:</span>
+            {getVerificationStatus(user.isEmailVerified)}
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-500">Joined:</span>
+            <span className="text-sm text-gray-900">{formatDate(user.createdAt)}</span>
+          </div>
+          {user.phone && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Phone:</span>
+              <span className="text-sm text-gray-900">{user.phone}</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-500">Last Login:</span>
+            <span className="text-sm text-gray-900">
+              {user.lastLogin ? formatDate(user.lastLogin.toString()) : "Never"}
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   if (isCompact) {
     return (
-      <div className="space-y-3">
+      <>
+      {
+        loading ? <Loading></Loading>:<div className="space-y-3">
         {filteredUsers.slice(0, 5).map((user) => (
           <div
             key={user._id}
@@ -164,7 +424,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
                 <p className="text-xs text-gray-500">{user.email}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center text-black gap-2">
               {getRoleBadge(user.role)}
               {getVerificationStatus(user.isEmailVerified)}
             </div>
@@ -178,303 +438,280 @@ const UsersTable: React.FC<UsersTableProps> = ({
           </div>
         )}
       </div>
+      }
+      </>
     );
   }
 
   return (
-    <div className="space-y-4 relative">
-      {/* ✅ Improved delete confirmation modal */}
-      {deleting.status && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl w-[300px] overflow-hidden">
-            <div className="flex flex-col">
-              <div className="flex gap-2 p-4 text-red-400 bg-gray-200">
-                <Trash2 />
-                <h1>Confirm Action</h1>
-              </div>
-              <p className="p-4 text-sm">
-                Are you sure you want to remove this user? This action cannot be
-                undone.
-              </p>
-            </div>
-            <div className="flex border-t">
-              <button
-                disabled={loading}
-                onClick={() => handleDeleteUser(deleting.id)}
-                className="flex-1 cursor-pointer flex items-center border-r justify-center p-3 disabled:opacity-50"
-              >
-                {loading ? (
-                  <Loader2 className="text-orange-400 animate-spin" />
-                ) : (
-                  "Yes"
-                )}
-              </button>
-              <button
-                disabled={loading}
-                onClick={() => setDeleting({ status: false, id: "" })}
-                className="flex-1 cursor-pointer flex items-center justify-center p-3 disabled:opacity-50"
-              >
-                No
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="space-y-4 bg-transparent">
+      {/* Delete Confirmation Dialog */}
+      <Dialog  open={deleting.status} onOpenChange={(open) => !open && setDeleting({ status: false, id: "" })}>
+        <DialogContent className="bg-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="w-5 h-5" />
+              Confirm Deletion
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600">
+            Are you sure you want to remove this user? This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleting({ status: false, id: "" })}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              className="border border-red-500 cursor-pointer text-red-500"
+              onClick={() => handleDeleteUser(deleting.id)}
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {EditingUserPopup(editingUser, handleCancelEdit, successMessage, formErrors, formatDate, editFormData, handleInputChange, hasChanges, loading, handleSaveEdit)}
 
       {/* Search and Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-lg">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Search users by name or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
-          />
-        </div>
-        <div className="relative">
-          <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value as typeof roleFilter)}
-            className="pl-10 pr-8 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none bg-white appearance-none cursor-pointer"
-          >
-            <option value="all">All Roles</option>
-            <option value="normal">Users</option>
-            <option value="corporate">Corporate</option>
-            <option value="admin">Admins</option>
-          </select>
-        </div>
+      <Card className="!border-none bg-red-40 rounded-none">
+        <CardContent className="p- !border-none ">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 !border-none relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search users by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 border-gray-200 focus:border-gray-200 "
+              />
+            </div>
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 z-10" />
+              <Select  value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-full sm:w-[180px] pl-10 border-gray-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="normal">Users</SelectItem>
+                  <SelectItem value="corporate">Corporate</SelectItem>
+                  <SelectItem value="admin">Admins</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Mobile View - Cards */}
+      <div className="block md:hidden">
+        {filteredUsers.map((user) => (
+          <MobileUserCard  key={user._id} user={user} />
+        ))}
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-left p-4 font-medium text-gray-700">User</th>
-              <th className="text-left p-4 font-medium text-gray-700">Role</th>
-              <th className="text-left p-4 font-medium text-gray-700">Status</th>
-              <th className="text-left p-4 font-medium text-gray-700">Contact</th>
-              <th className="text-left p-4 font-medium text-gray-700">Joined</th>
-              <th className="text-left p-4 font-medium text-gray-700">Last Login</th>
-              <th className="text-right p-4 font-medium text-gray-700">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.map((user) => (
-              <tr
-                key={user._id}
-                className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-              >
-                <td className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      {user.avatar ? (
-                        <img
-                          src={user.avatar}
-                          alt={user.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-white font-medium">
-                          {user.name.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-900 truncate">
-                        {user.name}
-                      </p>
-                      <p className="text-sm text-gray-500 truncate">
-                        {user.email}
-                      </p>
-                    </div>
-                  </div>
-                </td>
-                <td className="p-4">{getRoleBadge(user.role)}</td>
-                <td className="p-4">
-                  {getVerificationStatus(user.isEmailVerified)}
-                </td>
-                <td className="p-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Mail className="w-3 h-3" />
-                      <span className="truncate max-w-[200px]">
-                        {user.email}
-                      </span>
-                    </div>
-                    {user.phone && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Phone className="w-3 h-3" />
-                        <span>{user.phone}</span>
+      {/* Desktop View - Table */}
+      <div className="hidden md:block">
+        <Card className="border-gray-200 rounded-none">
+          <Table>
+            <TableHeader className="border-gray-200 rounded-none">
+              <TableRow className="border-gray-200 border-none">
+                <TableHead>User</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Joined</TableHead>
+                <TableHead>Last Login</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.map((user) => (
+                <TableRow className="border-gray-200" key={user._id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        {user.avatar ? (
+                          <img
+                            src={user.avatar}
+                            alt={user.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-white font-medium">
+                            {user.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </td>
-                <td className="p-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="w-3 h-3" />
-                    {formatDate(user.createdAt)}
-                  </div>
-                </td>
-                <td className="p-4">
-                  <span className="text-sm text-gray-600">
-                    {user.lastLogin
-                      ? formatDate(user.lastLogin.toString())
-                      : "Never"}
-                  </span>
-                </td>
-                <td className="p-4">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="View Details"
-                    >
-                      <Eye className="w-4 h-4 text-gray-500" />
-                    </button>
-                    <button
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Edit User"
-                    >
-                      <Edit2 className="w-4 h-4 text-gray-500" />
-                    </button>
-
-                    {/* Role Change Dropdown */}
-                    <div className="relative">
-                      <button
-                        onClick={() =>
-                          setActiveDropdown(
-                            activeDropdown === user._id ? null : user._id
-                          )
-                        }
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        title="More Actions"
-                      >
-                        <MoreVertical className="w-4 h-4 text-gray-500" />
-                      </button>
-
-                      {activeDropdown === user._id && (
-                        <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                          <div className="p-2">
-                            <p className="text-xs text-gray-500 px-2 py-1">
-                              Change Role
-                            </p>
-                            {(["normal", "corporate", "admin"] as const).map(
-                              (role) => (
-                                <button
-                                  key={role}
-                                  onClick={() =>
-                                    handleRoleChange(user._id, role)
-                                  }
-                                  className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-gray-100 transition-colors ${
-                                    user.role === role
-                                      ? "bg-gray-100 font-medium"
-                                      : ""
-                                  }`}
-                                >
-                                  {role.charAt(0).toUpperCase() +
-                                    role.slice(1)}
-                                </button>
-                              )
-                            )}
-                            <hr className="my-1" />
-                            <button
-                              onClick={() => {
-                                setDeleting({ status: true, id: user._id });
-                                setActiveDropdown(null);
-                              }}
-                              className="w-full text-left px-2 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors"
-                            >
-                              Delete User
-                            </button>
-                          </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 truncate">
+                          {user.name}
+                        </p>
+                        <p className="text-sm text-gray-500 truncate">
+                          {user.email}
+                        </p>
+                        {!user.isActive && (
+                          <span className="text-xs text-red-600 font-medium">
+                            Inactive
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>{getRoleBadge(user.role)}</TableCell>
+                  <TableCell>{getVerificationStatus(user.isEmailVerified)}</TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Mail className="w-3 h-3" />
+                        <span className="truncate max-w-[200px]">{user.email}</span>
+                      </div>
+                      {user.phone && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Phone className="w-3 h-3" />
+                          <span>{user.phone}</span>
                         </div>
                       )}
                     </div>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Calendar className="w-3 h-3" />
+                      {formatDate(user.createdAt)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-gray-600">
+                      {user.lastLogin
+                        ? formatDate(user.lastLogin.toString())
+                        : "Never"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button variant="ghost" size="sm">
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditUser(user)}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-white border !cursor-pointer shadow-lg border-gray-300" align="end">
+                          <DropdownMenuItem 
+                          
+                            onClick={() => setDeleting({ status: true, id: user._id })}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete User
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       </div>
 
       {/* Empty State */}
       {filteredUsers.length === 0 && (
-        <div className="text-center py-12">
-          <UserIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No users found
-          </h3>
-          <p className="text-gray-500">
-            {searchTerm || roleFilter !== "all"
-              ? "Try adjusting your search or filter criteria."
-              : "No users have been registered yet."}
-          </p>
-        </div>
+        <Card>
+          <CardContent className="text-center py-12">
+            <UserIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No users found
+            </h3>
+            <p className="text-gray-500">
+              {searchTerm || roleFilter !== "all"
+                ? "Try adjusting your search or filter criteria."
+                : "No users have been registered yet."}
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Pagination */}
       {pagination && pagination.pages > 1 && (
-        <div className="flex items-center justify-between p-4 border-t border-gray-200">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span>
-              Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-              {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
-              of {pagination.total} users
-            </span>
-          </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-sm text-gray-600">
+                Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+                {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
+                of {pagination.total} users
+              </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onPageChange && onPageChange(pagination.page - 1)}
-              disabled={pagination.page <= 1}
-              className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPageChange && onPageChange(pagination.page - 1)}
+                  disabled={pagination.page <= 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
 
-            <div className="flex items-center gap-1">
-              {[...Array(Math.min(5, pagination.pages))].map((_, i) => {
-                const pageNum =
-                  pagination.page <= 3
-                    ? i + 1
-                    : pagination.page >= pagination.pages - 2
-                    ? pagination.pages - 4 + i
-                    : pagination.page - 2 + i;
+                <div className="flex items-center gap-1">
+                  {[...Array(Math.min(5, pagination.pages))].map((_, i) => {
+                    const pageNum =
+                      pagination.page <= 3
+                        ? i + 1
+                        : pagination.page >= pagination.pages - 2
+                        ? pagination.pages - 4 + i
+                        : pagination.page - 2 + i;
 
-                if (pageNum < 1 || pageNum > pagination.pages) return null;
+                    if (pageNum < 1 || pageNum > pagination.pages) return null;
 
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => onPageChange && onPageChange(pageNum)}
-                    className={`px-3 py-1 text-sm rounded-lg transition-colors ${
-                      pagination.page === pageNum
-                        ? "bg-orange-500 text-white"
-                        : "hover:bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={pagination.page === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => onPageChange && onPageChange(pageNum)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPageChange && onPageChange(pagination.page + 1)}
+                  disabled={pagination.page >= pagination.pages}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
-
-            <button
-              onClick={() => onPageChange && onPageChange(pagination.page + 1)}
-              disabled={pagination.page >= pagination.pages}
-              className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
 };
 
 export default UsersTable;
+

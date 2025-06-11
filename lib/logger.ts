@@ -27,10 +27,10 @@ export class Logger {
   static async log(entry: LogEntry): Promise<void> {
     try {
       await connectDB();
-      
+      console.log(entry)
       const logEntry = new Log({
         ...entry,
-        entityId: new mongoose.Types.ObjectId(entry.entityId),
+        entityId: entry.entityId || "unknown",
         performedBy: new mongoose.Types.ObjectId(entry.performedBy),
         severity: entry.severity || 'low',
         status: entry.status || 'success'

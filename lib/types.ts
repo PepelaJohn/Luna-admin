@@ -101,3 +101,27 @@ interface Metadata {
 
 
 
+
+
+export interface CreateUserFormData {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phone: string;
+  role: "normal" | "corporate" | "admin";
+  isEmailVerified: boolean;
+  isActive: boolean;
+  reason:string
+}
+export interface UpdateuserData {
+  name?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  phone?: string;
+  role?: "normal" | "corporate" | "admin" | "super_admin";
+  isEmailVerified?: boolean;
+  isActive?: boolean;
+  reason?:string
+}

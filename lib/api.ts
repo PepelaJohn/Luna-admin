@@ -1,25 +1,29 @@
 // @/lib/api.ts
-import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
-import { AuthResponse } from '@/types/auth';
-import { LogResponse, User } from './types';
+import axios, {
+  AxiosInstance,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from "axios";
+import { AuthResponse } from "@/types/auth";
+import { CreateUserFormData, LogResponse, UpdateuserData, User } from "./types";
 
 // Default axios instance for regular API calls
 export const API: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: "/api",
   timeout: 10000,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
 // Separate axios instance for token refresh (to avoid infinite loops)
 export const refreshApi: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: "/api",
   timeout: 5000,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -38,7 +42,7 @@ const processQueue = (error: any, token: string | null = null) => {
       resolve(token);
     }
   });
-  
+
   failedQueue = [];
 };
 
@@ -66,11 +70,13 @@ API.interceptors.response.use(
         // If already refreshing, queue the request
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then(() => {
-          return API(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
+        })
+          .then(() => {
+            return API(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
       }
 
       originalRequest._retry = true;
@@ -78,26 +84,26 @@ API.interceptors.response.use(
 
       try {
         // Attempt to refresh the token
-        const response = await refreshApi.post('/auth/refresh');
-        
-        if (response.data.success) {
-          processQueue(null, response.data.token);
+        const response = await refreshApi.post("/auth/refresh");
+
+        if (response.data?.success) {
+          processQueue(null, response.data?.token);
           return API(originalRequest);
         } else {
-          throw new Error('Token refresh failed');
+          throw new Error("Token refresh failed");
         }
       } catch (refreshError) {
         processQueue(refreshError, null);
-        
+
         // Redirect to login or dispatch logout action
-        window.location.href = '/login';
+        window.location.href = "/auth";
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
     }
-
-    return Promise.reject(error);
+   
+    return error.response.data;
   }
 );
 
@@ -105,69 +111,75 @@ API.interceptors.response.use(
 export const authApi = {
   // Check current authentication status
   me: async (): Promise<AuthResponse> => {
-    const response = await API.get('/auth/me');
+    const response = await API.get("/auth/me");
     return response.data;
   },
 
   // Login user
   login: async (email: string, password: string): Promise<AuthResponse> => {
-    const response = await API.post('/auth/login', { email, password });
+    const response = await API.post("/auth/login", { email, password });
     return response.data;
   },
 
   // Register new user
   register: async (
-    name: string, 
-    email: string, 
-    password: string, 
+    name: string,
+    email: string,
+    password: string,
     role?: string
   ): Promise<AuthResponse> => {
-    const response = await API.post('/auth/register', { 
-      name, 
-      email, 
-      password, 
-      role 
+    const response = await API.post("/auth/register", {
+      name,
+      email,
+      password,
+      role,
     });
     return response.data;
   },
 
   // Logout user
   logout: async (): Promise<void> => {
-    await API.post('/auth/logout');
+    await API.post("/auth/logout");
   },
 
   // Refresh token
   refresh: async (): Promise<AuthResponse> => {
-    const response = await refreshApi.post('/auth/refresh');
+    const response = await refreshApi.post("/auth/refresh");
     return response.data;
   },
 
   // Verify email
   verifyEmail: async (token: string): Promise<AuthResponse> => {
-    const response = await API.post('/auth/verify-email', { token });
+    const response = await API.post("/auth/verify-email", { token });
     return response.data;
   },
 
   // Request password reset
   requestPasswordReset: async (email: string): Promise<AuthResponse> => {
-    const response = await API.post('/auth/forgot-password', { email });
+    const response = await API.post("/auth/forgot-password", { email });
     return response.data;
   },
 
   // Reset password
-  resetPassword: async (token: string, password: string): Promise<AuthResponse> => {
-    const response = await API.post('/auth/reset-password', { token, password });
+  resetPassword: async (
+    token: string,
+    password: string
+  ): Promise<AuthResponse> => {
+    const response = await API.post("/auth/reset-password", {
+      token,
+      password,
+    });
     return response.data;
   },
 
   // Change password (authenticated)
   changePassword: async (
-    currentPassword: string, 
+    currentPassword: string,
     newPassword: string
   ): Promise<AuthResponse> => {
-    const response = await API.post('/auth/change-password', { 
-      currentPassword, 
-      newPassword 
+    const response = await API.post("/auth/change-password", {
+      currentPassword,
+      newPassword,
     });
     return response.data;
   },
@@ -178,15 +190,13 @@ export const authApi = {
     email?: string;
     avatar?: string;
   }): Promise<AuthResponse> => {
-    const response = await API.put('/auth/profile', data);
+    const response = await API.put("/auth/profile", data);
     return response.data;
   },
 };
 
 // Export default api instance for other API calls
 export default API;
-
-
 
 interface UsersResponse {
   users: User[];
@@ -198,8 +208,6 @@ export interface deleteUserResponse {
   success: boolean;
 }
 
-
-
 interface Pagination {
   page: number;
   limit: number;
@@ -207,34 +215,61 @@ interface Pagination {
   pages: number;
 }
 
-
-
 export const usersApi = {
-  getUsers: async (role?:string): Promise<UsersResponse> => {
+  getUsers: async (role?: string): Promise<UsersResponse> => {
     const response = await API.get(`/users?role=${role}`);
-    return response.data;
+    if (response?.data?.success) {
+      return response.data;
+    } else {
+      return response as unknown as UsersResponse;
+    }
   },
 
-  deleteUser: async (id:string):Promise<deleteUserResponse>=>{
-    const response = await API.delete(`/users/${id}`)
-    return response.data
+  deleteUser: async (id: string): Promise<deleteUserResponse> => {
+    const response = await API.delete(`/users/${id}`);
+    if (response?.data?.success) {
+      return response.data;
+    } else {
+      return response as unknown as deleteUserResponse;
+    }
+  },
+
+  createUser: async (createUserData: CreateUserFormData) => {
+    const response: any = await API.post("/users", createUserData);
+    
+
+    if (response?.data?.success) {
+      return response.data;
+    } else {
+      return response;
+    }
+  },
+  updateUser: async ({updateUserData, id}:{id:string,updateUserData:UpdateuserData})=>{
+    const response:any = await API.put(`/users/${id}`, updateUserData)
+    if (response?.data?.success) {
+      return response.data;
+    } else {
+      return response;
+    }
   }
-}
+};
 
 interface ILogResponse {
-  logs:LogResponse[]
-  success:boolean
+  logs: LogResponse[];
+  success: boolean;
 }
 
 export const logsApi = {
-  getLogs: async ():Promise<ILogResponse> =>{
-    const response = await API.get('/logs');
-    return response.data
-  }
-}
+  getLogs: async (): Promise<ILogResponse> => {
+    const response = await API.get("/logs");
 
-
-
+    if ((response as any)?.data?.success) {
+      return response.data;
+    } else {
+      return response as unknown as ILogResponse;
+    }
+  },
+};
 
 interface ISubResponse {
   subscribers: SubUser[];
@@ -267,8 +302,12 @@ interface Preferences {
 }
 
 export const subsApi = {
-  getSubs : async():Promise<ISubResponse> =>{
-    const response = await API.get('/subscribers')
-    return response.data
-  }
-}
+  getSubs: async (): Promise<ISubResponse> => {
+    const response = await API.get("/subscribers");
+    if (response?.data?.success) {
+      return response.data;
+    } else {
+      return response as unknown as ISubResponse;
+    }
+  },
+};

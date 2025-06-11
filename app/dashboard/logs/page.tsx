@@ -6,8 +6,8 @@ import { useLogs } from "@/hooks/useLogs";
 import React from "react";
 
 const Subs = () => {
-  const { users, pagination } = useData();
-  const { logs } = useLogs();
+  const {  pagination, } = useData();
+  const { logs, loading } = useLogs();
 
   const stats = {
    
@@ -25,8 +25,8 @@ const Subs = () => {
       }).length || 0,
   };
   return (
-    <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-      <div className="p-4 lg:p-6 border-b">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="p-4 lg:p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold">Activity Logs</h3>
@@ -50,16 +50,27 @@ const Subs = () => {
           </div>
         </div>
       </div>
-      <LogsTable
+     {loading ?<Loading></Loading> : <LogsTable
         logs={logs || []}
         pagination={pagination}
         onPageChange={(page: number) => {
           // Implement logs pagination if needed
           // getLogs(page);
         }}
-      />
+      />}
     </div>
   );
 };
 
 export default Subs;
+
+export function Loading() {
+  return (
+    <div className=" py-18 bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading ...</p>
+      </div>
+    </div>
+  );
+}

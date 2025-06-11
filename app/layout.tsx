@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/context/AuthContext'
+import Script from 'next/script'
 
 export const metadata: Metadata = {
   title: 'Luna',
@@ -22,7 +23,9 @@ export default function RootLayout({
         {children}
         
         </AuthProvider>
+     
         </body>
+        
     </html>
   )
 }

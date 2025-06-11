@@ -1,69 +1,187 @@
-
 // @/app/api/admin/users/[id]/route.ts (Update/Delete user - Admin only)
+import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import User from '@/models/User';
+import User, { IUser } from '@/models/User';
 import { returnSuccess, returnError } from '@/lib/response';
 import { connectDB } from '@/lib/db';
 import { withAuth } from '@/lib/api-middleware';
-import { User as UserTpe } from '@/lib/types';
+import { User as UserType } from '@/lib/types';
 import { Logger } from '@/lib/logger';
 
 const updateUserSchema = z.object({
-  name: z.string().min(2).max(50).optional(),
-  role: z.enum(['normal', 'corporate', 'admin']).optional(),
-  isEmailVerified: z.boolean().optional(),
+  name: z.string().min(1).max(100).optional(),
+  email: z.string().email().optional(),
+  password: z.string().min(6).optional(),
+  role: z.enum(['normal', 'admin', 'super_admin', 'corporate']).optional(),
+  isActive: z.boolean().optional(),
+  phone: z.string().optional(),
+  reason: z.string().optional(),
+  isEmailVerified: z.boolean().optional()
 });
 
 // Helper function to get client info
 function getClientInfo(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for') || 
              request.headers.get('x-real-ip') || 
-             
              'unknown';
   const userAgent = request.headers.get('user-agent') || undefined;
   return { ip, userAgent };
 }
 
-async function updateUserHandler(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+async function updateUserHandler(request: NextRequest) {
   try {
+    const body = await request.json();
     await connectDB();
     
-    const body = await request.json();
-    const updateData = updateUserSchema.parse(body);
+    const { ...updateData } = body;
     
-    const user = await User.findById(params.id);
-    if (!user) {
+    const userId = request.url.split('/').pop();
+    if (!userId) {
+      return returnError({
+        message: 'User ID is required',
+        status: 400,
+      });
+    }
+
+    const validatedData = updateUserSchema.parse(updateData);
+    const { reason = "Admin requested update", password, ...userData } = validatedData;
+
+    // Get current user data for validation and logging
+    const currentUser = await User.findById(userId).lean() as unknown as  IUser;
+    if (!currentUser) {
       return returnError({
         message: 'User not found',
         status: 404,
       });
     }
 
+    const performingUser = (request as any).user;
+
+    // Security checks
+    // 1. Prevent self-modification
+    if (userId === performingUser.id) {
+      return returnError({
+        message: 'You cannot modify your own account',
+        status: 403,
+      });
+    }
+
+    // 2. Only super_admin can modify super_admin accounts
+    if (currentUser.role === 'super_admin' && performingUser.role !== 'super_admin') {
+      return returnError({
+        message: 'Only super admins can modify super admin accounts',
+        status: 403,
+      });
+    }
+
+    // 3. Only super_admin can assign super_admin role
+    if (userData.role === 'super_admin' && performingUser.role !== 'super_admin') {
+      return returnError({
+        message: 'Only super admins can assign super admin role',
+        status: 403,
+      });
+    }
+
+    // 4. Regular admins cannot modify other admin accounts
+    if (currentUser.role === 'admin' && performingUser.role === 'admin') {
+      return returnError({
+        message: 'Admins cannot modify other admin accounts',
+        status: 403,
+      });
+    }
+
+    // 5. Prevent role escalation - regular admins cannot assign admin role
+    if (userData.role === 'admin' && performingUser.role === 'admin') {
+      return returnError({
+        message: 'Admins cannot assign admin role to other users',
+        status: 403,
+      });
+    }
+
+    // 6. Check if trying to demote the last admin
+    if (currentUser.role === 'admin' && userData.role && userData.role !== 'admin') {
+      const adminCount = await User.countDocuments({ role: 'admin' });
+      if (adminCount <= 1) {
+        return returnError({
+          message: 'Cannot demote the last admin user',
+          status: 400,
+        });
+      }
+    }
+
+    // 7. Check if trying to deactivate the last admin
+    if (currentUser.role === 'admin' && userData.isActive === false) {
+      const activeAdminCount = await User.countDocuments({ 
+        role: 'admin', 
+        isActive: true,
+        _id: { $ne: userId } // Exclude current user from count
+      });
+      if (activeAdminCount < 1) {
+        return returnError({
+          message: 'Cannot deactivate the last active admin user',
+          status: 400,
+        });
+      }
+    }
+
+    // Prepare update data
+    const updatePayload: any = { ...userData };
+    
+    // Hash password if provided
+    if (password) {
+      updatePayload.password = await bcrypt.hash(password, 12);
+    }
+
     // Update user
-    Object.assign(user, updateData);
-    await user.save();
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updatePayload,
+      { new: true, runValidators: true }
+    ).select('-password').lean();
+
+    // Log the update
+    const { ip, userAgent } = getClientInfo(request);
+
+    await Logger.logUserUpdate(
+      userId,
+      performingUser.id,
+      currentUser,
+      updatedUser,
+      ip,
+      userAgent,
+      reason
+    );
 
     return returnSuccess({
-      data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          isEmailVerified: user.isEmailVerified,
-          avatar: user.avatar,
-          lastLogin: user.lastLogin,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-        },
-      },
+      data: { user: updatedUser },
       message: 'User updated successfully',
     });
   } catch (error: any) {
+    const userId = request.url.split('/').pop()!;
+    try {
+      const performedBy = (request as any).user?.id;
+      const { ip } = getClientInfo(request);
+      
+      if (performedBy) {
+        await Logger.log({
+          action: 'update',
+          entity: 'User',
+          entityId: userId,
+          performedBy,
+          metadata: { 
+            reason: 'Update failed', 
+            error: error?.message,
+          },
+          ip,
+          status: 'failed',
+          severity: 'medium'
+        });
+      }
+    } catch (logError) {
+      console.error('Failed to log error:', logError);
+    }
+
     if (error.name === 'ZodError') {
       return returnError({
         message: 'Invalid input data',
@@ -74,26 +192,18 @@ async function updateUserHandler(
 
     return returnError({
       message: 'Failed to update user',
-      error,
+      error: error.message,
       status: 500,
     });
   }
 }
+
 async function deleteUserHandler(request: NextRequest) {
   try {
     await connectDB();
-    // const body = await request.json();
-    const reason = ""
+    const reason = "Admin requested deletion";
     
-    const userId = request.url.split('/').pop()
-
-     const userToDelete:UserTpe = await User.findById(userId).lean() as any;
-    if (!userToDelete) {
-      return returnError({
-        message: 'User not found',
-        status: 404,
-      });
-    }
+    const userId = request.url.split('/').pop();
     if (!userId) {
       return returnError({
         message: 'User ID is required',
@@ -101,13 +211,42 @@ async function deleteUserHandler(request: NextRequest) {
       });
     }
 
-     if((userId === userToDelete._id)){
+    const userToDelete: UserType = await User.findById(userId).lean() as any;
+    if (!userToDelete) {
       return returnError({
-        message:"You cannot delete yourself"
-      })
+        message: 'User not found',
+        status: 404,
+      });
     }
 
-    // Don't allow deleting the last admin
+    const performingUser = (request as any).user;
+
+    // Security checks
+    // 1. Prevent self-deletion
+    if (userId === performingUser.id) {
+      return returnError({
+        message: "You cannot delete yourself",
+        status: 403,
+      });
+    }
+
+    // 2. Only super_admin can delete super_admin accounts
+    if (userToDelete.role === 'super_admin' && performingUser.role !== 'super_admin') {
+      return returnError({
+        message: 'Only super admins can delete super admin accounts',
+        status: 403,
+      });
+    }
+
+    // 3. Regular admins cannot delete other admin accounts
+    if (userToDelete.role === 'admin' && performingUser.role === 'admin') {
+      return returnError({
+        message: 'Admins cannot delete other admin accounts',
+        status: 403,
+      });
+    }
+
+    // 4. Don't allow deleting the last admin
     if (userToDelete.role === 'admin') {
       const adminCount = await User.countDocuments({ role: 'admin' });
       if (adminCount <= 1) {
@@ -117,24 +256,21 @@ async function deleteUserHandler(request: NextRequest) {
         });
       }
     }
-    
-    // Get user data before deletion for logging
-   
 
-    // Prevent deletion of super_admin by non-super_admin
-    const performingUser = (request as any).user;
-    if (userToDelete.role === 'super_admin' && performingUser.role !== 'super_admin') {
-      return returnError({
-        message: 'Cannot delete super admin user',
-        status: 403,
-      });
+    // 5. Don't allow deleting the last super_admin
+    if (userToDelete.role === 'super_admin') {
+      const superAdminCount = await User.countDocuments({ role: 'super_admin' });
+      if (superAdminCount <= 1) {
+        return returnError({
+          message: 'Cannot delete the last super admin user',
+          status: 400,
+        });
+      }
     }
 
     // Delete user
     await User.findByIdAndDelete(userId);
 
-    // Log the deletion
-    console.log('about to log')
     const { ip, userAgent } = getClientInfo(request);
     await Logger.logUserDeletion(
       userId,
@@ -145,7 +281,6 @@ async function deleteUserHandler(request: NextRequest) {
       reason
     );
     
-    console.log('logged')
     return returnSuccess({
       data: { 
         deletedUserId: userId,
@@ -154,6 +289,30 @@ async function deleteUserHandler(request: NextRequest) {
       message: 'User deleted successfully',
     });
   } catch (error: any) {
+    const userId = request.url.split('/').pop()!;
+    try {
+      const performedBy = (request as any).user?.id;
+      const { ip } = getClientInfo(request);
+      
+      if (performedBy) {
+        await Logger.log({
+          action: 'delete',
+          entity: 'User',
+          entityId: userId,
+          performedBy,
+          metadata: { 
+            reason: 'Delete failed', 
+            error: error?.message,
+          },
+          ip,
+          status: 'failed',
+          severity: 'high'
+        });
+      }
+    } catch (logError) {
+      console.error('Failed to log error:', logError);
+    }
+
     return returnError({
       message: 'Failed to delete user',
       error: error.message,
@@ -162,7 +321,5 @@ async function deleteUserHandler(request: NextRequest) {
   }
 }
 
-
-
-export const PUT = withAuth(updateUserHandler, { roles: ['admin'] });
-export const DELETE = withAuth(deleteUserHandler, { roles: ['admin'] });
+export const PUT = withAuth(updateUserHandler, { roles: ['admin', 'super_admin'] });
+export const DELETE = withAuth(deleteUserHandler, { roles: ['admin', 'super_admin'] });

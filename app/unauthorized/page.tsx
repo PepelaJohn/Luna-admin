@@ -1,12 +1,14 @@
 'use client'
 import React from 'react';
-import { Shield,  ArrowLeft, Home } from 'lucide-react';
+import { Shield,  ArrowLeft, Home, LogOutIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 export default function UnauthorizedPage() {
  
 const router = useRouter()
+const {logout} = useAuth()
   const handleGoHome = () => {
-    router.replace('/')
+    logout()
   };
    const handleGoBack = () => {
    router.back();
@@ -58,19 +60,19 @@ const router = useRouter()
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <button
-            onClick={handleGoBack}
-            className="flex items-center space-x-2 px-6 py-3 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg hover:scale-105 min-w-[140px]"
+            onClick={handleGoHome}
+            className="flex items-center space-x-2 cursor-pointer  px-6 py-3 bg-red-200 hover:bg-red-300 border border-slate-600 rounded-lg text-red-600 font-medium transition-all duration-200 hover:shadow-lg afdale-105 min-w-[140px]"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Go Back</span>
+            <LogOutIcon className="w-4 h-4" />
+            <span>Logout</span>
           </button>
           
           <button
-            onClick={handleGoHome}
-            className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 hover:from-yellow-500 hover:via-orange-600 hover:to-red-600 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg hover:scale-105 min-w-[140px]"
+            onClick={handleGoBack}
+            className="flex items-center space-x-2 cursor-pointer px-6 py-3 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 hover:from-yellow-500 hover:via-orange-600 hover:to-red-600 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-lg afdale-105 min-w-[140px]"
           >
             <Home className="w-4 h-4" />
-            <span>Go Home</span>
+            <span>Home</span>
           </button>
         </div>
 

@@ -11,6 +11,7 @@ import { CheckCircle, Clock } from 'lucide-react';
 import { SubUser } from '@/lib/api';
 import { formatDateTime } from '@/utils/date';
 import { useSubscribers } from '@/hooks/useSubscribers';
+import { Loading } from '@/app/dashboard/logs/page';
 
 interface SubscribersTableProps {
  
@@ -18,11 +19,13 @@ interface SubscribersTableProps {
 }
 
 const SubscribersTable: React.FC<SubscribersTableProps> = ({  isCompact = false }) => {
-  const {subscribers} = useSubscribers()
+  const {subscribers, loading} = useSubscribers()
   if (isCompact) {
 
     return (
-      <div className="space-y-3">
+  <>
+  {
+    loading ? <Loading></Loading> :    <div className="space-y-3">
         {subscribers.slice(0,3).map((subscriber) => (
           <div key={subscriber._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex-1 min-w-0">
@@ -38,11 +41,15 @@ const SubscribersTable: React.FC<SubscribersTableProps> = ({  isCompact = false 
           </div>
         ))}
       </div>
+  }
+  </>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
+   <>
+   {
+    loading ? <Loading></Loading> :  <div className="overflow-x-auto">
       <table className="w-full">
         <thead className="bg-gray-50">
           <tr>
@@ -72,7 +79,9 @@ const SubscribersTable: React.FC<SubscribersTableProps> = ({  isCompact = false 
           ))}
         </tbody>
       </table>
-    </div>
+    </div> 
+   }
+   </>
   );
 };
 

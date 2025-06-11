@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
+import { DownloadButton } from '@/app/dashboard/logs/i';
 
 export interface LogResponse {
   _id: string;
@@ -165,10 +166,10 @@ const LogsTable: React.FC<LogsTableProps> = ({
   const uniqueSeverities = [...new Set(logs.map(log => log.severity))];
 
   return (
-    <div className="w-full">
+    <div className="w-full mb-18">
       {/* Filters - Only show if not compact */}
       {!isCompact && (
-        <div className="p-4 bg-gray-50 border-b flex flex-wrap gap-4 items-center">
+        <div className="p-4 bg-gray-50 border-b border-gray-100 flex flex-wrap gap-4 items-center">
           {/* Search */}
           <div className="flex-1 min-w-64">
             <div className="relative">
@@ -206,11 +207,12 @@ const LogsTable: React.FC<LogsTableProps> = ({
               <option key={action} value={action}>{action}</option>
             ))}
           </select>
+          <DownloadButton logs={filteredLogs} />
         </div>
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-auto pb-18">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -368,7 +370,7 @@ const LogsTable: React.FC<LogsTableProps> = ({
 
       {/* Pagination */}
       {pagination && !isCompact && (
-        <div className="px-4 py-3 bg-gray-50 border-t flex items-center justify-between">
+        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
           <div className="flex items-center text-sm text-gray-700">
             <span>
               Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}

@@ -4,7 +4,6 @@ import Sidebar from "@/components/admin/SideBar";
 import { useAuth } from "@/context/AuthContext";
 // import { useAuth } from "@/context/AuthContext";
 import { Bell, Menu, Moon, Search, Sun, UserIcon, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 
 const layout = ({
@@ -12,30 +11,16 @@ const layout = ({
 }: Readonly<{
   children: React.ReactNode;
 }>) => {
-  const router = useRouter();
-  const {  isAdmin } = useAuth();
-
+  
   //   const {users, pagination, getUsers}= useData()
 
-  useEffect(() => {
-    
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const tab = urlParams.get("tab");
-      if (tab) {
-        setActiveTab(tab);
-      }
-    }
-   
-  }, [isAdmin]);
   const [popupOpen, setIsPopupOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchBarOpen, setIsSearchBarOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard"); 
   //  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
- 
 
   const notifications = [
     {
@@ -68,7 +53,9 @@ const layout = ({
     },
   ];
 
-  
+  // Set active tab based on current URL - only run on client side
+
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* // Mobile header */}
@@ -90,17 +77,16 @@ const layout = ({
 
       <div className="flex">
         <Sidebar
-          activeTab={activeTab}
-         
           isSidebarOpen={isSidebarOpen}
           onCloseSidebar={() => setIsSidebarOpen(false)}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
         />
 
         {/* Main content */}
-        <div className="flex-1 min-h-screen lg:ml-0">
-         
+        <div className="flex-1 max-h-screen overflow-hidden h-screen lg:ml-0">
           {DesktopHeader(
-            activeTab,
+          
             setIsDarkMode,
             isDarkMode,
             isSearchBarOpen,
@@ -108,15 +94,15 @@ const layout = ({
             popupRef,
             setIsPopupOpen,
             popupOpen,
-            notifications
+            notifications,
+            activeTab // Pass activeTab to header
           )}
 
-          <div className="relative px-8 py-14">
+          <div className="relative overflow-y-auto max-h-screen px-8 py-14">
             {children}
           </div>
         </div>
       </div>
-      
     </div>
   );
 };
@@ -124,7 +110,6 @@ const layout = ({
 export default layout;
 
 function DesktopHeader(
-  activeTab: string,
   setIsDarkMode: React.Dispatch<React.SetStateAction<boolean>>,
   isDarkMode: boolean,
   isSearchBarOpen: boolean,
@@ -137,16 +122,18 @@ function DesktopHeader(
     to: { name: string; _id: string; email: string };
     message: string;
     createdAt: Date;
-  }[]
+  }[],
+  activeTab: string // Add activeTab parameter
 ) {
+  console.log(activeTab)
   return (
-    <div className="hidden lg:flex items-center justify-between p-6 bg-gray-100 backdrop-blur-md border-b border-gray-200 sticky top-0 z-20">
+    <div className="hidden lg:flex items-center justify-between p-4 bg-gray-100 backdrop-blur-md border-b border-gray-200 sticky top-0 z-20">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 capitalize">
           {activeTab === "overview" ? "Dashboard Overview" : activeTab}
         </h2>
         <p className="text-gray-600 mt-1">
-          {activeTab === "overview" && "Welcome back! Here's what's happening."}
+          {activeTab === "dashboard" && "Welcome back! Here's what's happening."}
           {activeTab === "partners" && "Manage your business partnerships"}
           {activeTab === "subscribers" && "Track your email subscribers"}
           {activeTab === "users" && "User management system"}

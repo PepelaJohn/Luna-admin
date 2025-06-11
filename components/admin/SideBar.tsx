@@ -16,71 +16,62 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
 
 interface SidebarProps {
-  activeTab: string;
-  
   isSidebarOpen: boolean;
   onCloseSidebar: () => void;
+  setActiveTab:React.Dispatch<React.SetStateAction<string>>;
+  activeTab:string
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
-  activeTab,
   isSidebarOpen,
   onCloseSidebar,
+  setActiveTab,
+  activeTab
 }) => {
-  const router = useRouter()
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-const {user, logout} = useAuth()
-  // Mock user data
-  const  onTabChange = (tabId:string)=>{
-    router.push(`/dashboard/${tabId}`)
-  }
+  // const [activeTab, setActiveTab] = useState<string>("dashboard"); // Default to dashboard
+  const { user, logout } = useAuth();
 
   const sidebarItems = [
     { 
-      id: "overview", 
+      id: "dashboard", 
       label: "Dashboard", 
       icon: BarChart3,
       description: "Overview & analytics",
-      href:"/"
-
+      href: "/"
     },
     { 
       id: "partners", 
       label: "Partners", 
       icon: Building2,
       description: "Manage partnerships",
-      badge: "12", // Pending applications,
-      href:"/partners"
-
+      badge: "12",
+      href: "/partners"
     },
     { 
       id: "subscribers", 
       label: "Subscribers", 
       icon: Mail,
       description: "Email list management",
-      href:"/subscribers"
-
+      href: "/subscribers"
     },
     { 
       id: "users", 
       label: "Users", 
       icon: Users,
       description: "User management",
-      href:"/users"
-
+      href: "/users"
     },
     {
       id: "logs",
       label: "Activity Logs",
       icon: FileText, 
       description: "System activity and audit trail",
-      href:"/logs"
-
+      href: "/logs"
     },
   ];
 
@@ -89,13 +80,13 @@ const {user, logout} = useAuth()
       id: "profile", 
       label: "My Profile", 
       icon: User,
-      action: () => console.log("")
+      action: () => console.log("Profile clicked")
     },
     { 
       id: "settings", 
       label: "Settings", 
       icon: Settings,
-      action: () => console.log("")
+      action: () => console.log("Settings clicked")
     },
     { 
       id: "theme", 
@@ -107,16 +98,44 @@ const {user, logout} = useAuth()
       id: "help", 
       label: "Help & Support", 
       icon: HelpCircle,
-      action: () => console.log("")
+      action: () => console.log("Help clicked")
     },
     { 
       id: "logout", 
       label: "Sign Out", 
       icon: LogOut,
-      action: () => {logout()},
+      action: () => { logout() },
       danger: true
     },
   ];
+
+  // Set active tab based on current URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      
+      // Handle different URL patterns
+      if (pathname === '/dashboard' || pathname === '/dashboard/') {
+        setActiveTab('dashboard');
+      } else if (pathname.includes('/partners')) {
+        setActiveTab('partners');
+      } else if (pathname.includes('/subscribers')) {
+        setActiveTab('subscribers');
+      } else if (pathname.includes('/users')) {
+        setActiveTab('users');
+      } else if (pathname.includes('/logs')) {
+        setActiveTab('logs');
+      } else {
+        // Fallback: try to extract from URL
+        const segments = pathname.split('/').filter(Boolean);
+        const lastSegment = segments[segments.length - 1];
+        const matchingItem = sidebarItems.find(item => 
+          item.id === lastSegment || item.href.includes(lastSegment)
+        );
+        setActiveTab(matchingItem?.id || 'dashboard');
+      }
+    }
+  }, []); // Remove activeTab from dependencies
 
   // Close profile menu when clicking outside
   useEffect(() => {
@@ -134,6 +153,11 @@ const {user, logout} = useAuth()
   const handleProfileMenuClick = (item: any) => {
     item.action();
     setProfileMenuOpen(false);
+  };
+
+  // Handle navigation item clicks
+  const handleNavClick = (itemId: string) => {
+    setActiveTab(itemId);
   };
 
   return (
@@ -155,7 +179,7 @@ const {user, logout} = useAuth()
                 <span className="text-white font-bold text-lg">L</span>
               </div>
               <div>
-                <Link href={'/admin'} className="text-xl font-bold bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+                <Link href={'/dashboard'} className="text-xl font-bold bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
                   LUNA ADMIN
                 </Link>
                 <p className="text-xs text-slate-400">Management Portal</p>
@@ -171,56 +195,54 @@ const {user, logout} = useAuth()
               </p>
               <div className="space-y-3">
                 {sidebarItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                
-                return (
-                  <Link
-                  href={`/dashboard${item.href.toLowerCase()}`}
-                    key={item.href}
-                   
-                    className={`
-                      group w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl 
-                      transition-all duration-200 relative overflow-hidden
-                      ${isActive
-                        ? "bg-gradient-to-r from-yellow-400/10 via-orange-500/10 to-red-500/10 text-white  border-orange-500/30 shadow-lg"
-                        : "text-slate-300 hover:text-white hover:bg-slate-700/50"
-                      }
-                    `}
-                  >
-                    {/* Active indicator */}
-                    {isActive && (
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-yellow-400 via-orange-500 to-red-500 rounded-r" />
-                    )}
-                    
-                    <div className={`
-                      p-2 rounded-lg mr-3 transition-colors
-                      ${isActive 
-                        ? "bg-gradient-to-r from-yellow-400/20 to-orange-500/20" 
-                        : "bg-slate-700/50 group-hover:bg-slate-600/50"
-                      }
-                    `}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    
-                    <div className="flex-1 text-left">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{item.label}</span>
-                        {item.badge && (
-                          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                            {item.badge}
-                          </span>
-                        )}
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  
+                  return (
+                    <Link
+                      href={`/dashboard${item.href}`}
+                      key={item.id}
+                      onClick={() => handleNavClick(item.id)}
+                      className={`
+                        group w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl 
+                        transition-all duration-200 relative overflow-hidden
+                        ${isActive
+                          ? "bg-gradient-to-r from-yellow-400/10 via-orange-500/10 to-red-500/10 text-white border-orange-500/30 shadow-lg"
+                          : "text-slate-300 hover:text-white hover:bg-slate-700/50"
+                        }
+                      `}
+                    >
+                      {/* Active indicator */}
+                      {isActive && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-yellow-400 via-orange-500 to-red-500 rounded-r" />
+                      )}
+                      
+                      <div className={`
+                        p-2 rounded-lg mr-3 transition-colors
+                        ${isActive 
+                          ? "bg-gradient-to-r from-yellow-400/20 to-orange-500/20" 
+                          : "bg-slate-700/50 group-hover:bg-slate-600/50"
+                        }
+                      `}>
+                        <Icon className="w-5 h-5" />
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5">{item.description}</p>
-                    </div>
-                  </Link>
-                );
-              })}
+                      
+                      <div className="flex-1 text-left">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{item.label}</span>
+                          {item.badge && (
+                            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                              {item.badge}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 mt-0.5">{item.description}</p>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
-
-        
           </div>
 
           {/* User Profile Section */}
@@ -239,9 +261,9 @@ const {user, logout} = useAuth()
 
               {/* User Info */}
               <div className="flex-1 text-left min-w-0">
-                <p className="font-medium text-white capitalize  truncate">{user?.name || "User"}</p>
-                <p className="text-xs text-slate-400  lowercase truncate">{user?.email || ""}</p>
-                <p className="text-xs text-orange-400 capitalize  font-medium">{user?.role || "Admin"}</p>
+                <p className="font-medium text-white capitalize truncate">{user?.name || "User"}</p>
+                <p className="text-xs text-slate-400 lowercase truncate">{user?.email || ""}</p>
+                <p className="text-xs text-orange-400 capitalize font-medium">{user?.role || "Admin"}</p>
               </div>
 
               {/* Dropdown Arrow */}

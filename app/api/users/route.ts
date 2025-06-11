@@ -8,6 +8,9 @@ import { withAuth } from '@/lib/api-middleware';
 import { Logger } from '@/lib/logger';
 import bcrypt from 'bcryptjs';
 import { User as UserType } from '@/lib/types';
+import VerificationCode, { VerificationCodeType } from '@/models/VerificationCode';
+import { timeFromNow } from '@/utils/date';
+import { sendConfirmationStartupEmail } from '@/lib/email';
 
 // Validation schemas
 
@@ -16,7 +19,7 @@ const createUserSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   email: z.string().email('Invalid email format'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.enum(['user', 'admin', 'super_admin']).default('user'),
+  role: z.enum(['normal', 'admin', 'super_admin']).default('normal'),
   isActive: z.boolean().default(true),
   phone: z.string().optional(),
   reason: z.string().optional(), // Reason for creating the user
@@ -26,7 +29,7 @@ const updateUserSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   email: z.string().email().optional(),
   password: z.string().min(6).optional(),
-  role: z.enum(['user', 'admin', 'super_admin']).optional(),
+  role: z.enum(['normal', 'admin', 'super_admin']).optional(),
   isActive: z.boolean().optional(),
   phone: z.string().optional(),
   reason: z.string().optional(), // Reason for the update
@@ -108,9 +111,10 @@ async function createUserHandler(request: NextRequest) {
     await connectDB();
     
     const body = await request.json();
+    console.log(body)
     const validatedData = createUserSchema.parse(body);
     const { reason, password, ...userData } = validatedData;
-
+    console.log(validatedData)
     // Check if user already exists
     const existingUser = await User.findOne({ email: validatedData.email });
     if (existingUser) {
@@ -120,41 +124,55 @@ async function createUserHandler(request: NextRequest) {
       });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
 
+
+    
     // Create user
     const newUser = new User({
       ...userData,
-      password: hashedPassword,
+      password,
     });
 
-    const savedUser = await newUser.save();
+    
+
+    const verificationCode = await VerificationCode.create({
+    userId:newUser._id,
+    type: VerificationCodeType.EmailVerification,
+    expiresAt: timeFromNow("d", 1),
+  });
+
+  await sendConfirmationStartupEmail({
+    name:newUser.name,
+    email: newUser.email,
+    token: verificationCode._id.toString(),
+  });
 
     // Log the creation
-    const performedBy = (request as any).user.id;
+    const performedBy = (request as any).user?.id || (request as any).user?._id;
     const { ip, userAgent } = getClientInfo(request);
 
+    
     await Logger.logUserCreation(
-      savedUser._id.toString(),
+      newUser._id.toString(),
       performedBy,
-      { ...userData, createdBy: performedBy },
+      { ...userData, createdBy: performedBy,  },
       ip,
       userAgent
     );
 
-    // Remove password from response
-    const { password: _, ...userResponse } = savedUser.toObject();
-
+ 
+     await newUser.save();
     return returnSuccess({
-      data: { user: userResponse },
+      
       message: 'User created successfully',
       status: 201,
     });
   } catch (error: any) {
     // Log failed creation attempt
     try {
-      const performedBy = (request as any).user?.id;
+      console.log(error)
+      console.log((request as any).user?.id,(request as any).user?._id )
+      const performedBy = (request as any).user?.id || (request as any).user?._id;
       const { ip } = getClientInfo(request);
       
       if (performedBy) {
@@ -193,7 +211,7 @@ async function createUserHandler(request: NextRequest) {
     }
 
     return returnError({
-      message: 'Failed to create user',
+      message: error.message || 'Failed to create user',
       error: error.message,
       status: 500,
     });
@@ -321,8 +339,10 @@ async function updateUserHandler(request: NextRequest) {
     await connectDB();
     
     const body = await request.json();
-    const { userId, ...updateData } = body;
+    const {  ...updateData } = body;
+    // const reason = "User Requested deletion"
     
+    const userId = request.url.split('/').pop()
     if (!userId) {
       return returnError({
         message: 'User ID is required',
@@ -331,7 +351,7 @@ async function updateUserHandler(request: NextRequest) {
     }
 
     const validatedData = updateUserSchema.parse(updateData);
-    const { reason, password, ...userData } = validatedData;
+    const { reason="User Requested deletion", password, ...userData } = validatedData;
 
     // Get current user data for logging
     const currentUser = await User.findById(userId).lean();

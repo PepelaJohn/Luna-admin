@@ -23,6 +23,8 @@ const getSubs = async ()=>{
         }
     } catch (error:any) {
         setError(error.message)
+    }finally{
+        setLoading(false)
     }
 }
 useEffect(()=>{
