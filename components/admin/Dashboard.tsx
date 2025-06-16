@@ -212,7 +212,7 @@ const Dashboard: React.FC = () => {
       <div className="flex">
         <Sidebar
           activeTab={activeTab}
-         
+         setActiveTab={setActiveTab}
           isSidebarOpen={isSidebarOpen}
           onCloseSidebar={() => setIsSidebarOpen(false)}
         />

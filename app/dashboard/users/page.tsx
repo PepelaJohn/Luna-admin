@@ -3,8 +3,8 @@ import UsersTable from "@/components/admin/UserTable";
 import { useData } from "@/hooks/useData";
 import Link from "next/link";
 import React from "react";
-import { Loading } from "../logs/page";
 import { Plus } from "lucide-react";
+import { Loading } from "@/components/LoadingComponent";
 
 const Subs = () => {
   const { users, pagination, loading } = useData();

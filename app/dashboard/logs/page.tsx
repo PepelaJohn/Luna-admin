@@ -64,7 +64,7 @@ const Subs = () => {
 
 export default Subs;
 
-export function Loading() {
+function Loading() {
   return (
     <div className=" py-18 bg-gray-50 flex items-center justify-center">
       <div className="text-center">

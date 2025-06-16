@@ -4,12 +4,13 @@ import PartnersTable from "@/components/admin/PartnersTable";
 import StatsGrid from "@/components/admin/StatsGrid";
 import SubscribersTable from "@/components/admin/SubscribersTable";
 import UsersTable from "@/components/admin/UserTable";
+import { Loading } from "@/components/LoadingComponent";
 import { useData } from "@/hooks/useData";
 import { useLogs } from "@/hooks/useLogs";
 import { useSubscribers } from "@/hooks/useSubscribers";
 import Link from "next/link";
 import React from "react";
-import { Loading } from "./logs/page";
+// import { Loading } from "./logs/page";
 
 const DashBoardHomepage = () => {
   const { users, loading } = useData();

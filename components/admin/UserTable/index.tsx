@@ -61,9 +61,9 @@ import {
   Alert,
   AlertDescription,
 } from "@/components/ui/alert";
-import { Loading } from "@/app/dashboard/logs/page";
 import { usersApi } from "@/lib/api";
 import { EditingUserPopup } from "./EditingUserPopup";
+import { Loading } from "@/components/LoadingComponent";
 
 // Mock types - replace with your actual types
 interface User {

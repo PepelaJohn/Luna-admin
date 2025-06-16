@@ -11,7 +11,7 @@ import { CheckCircle, Clock } from 'lucide-react';
 import { SubUser } from '@/lib/api';
 import { formatDateTime } from '@/utils/date';
 import { useSubscribers } from '@/hooks/useSubscribers';
-import { Loading } from '@/app/dashboard/logs/page';
+import { Loading } from '../LoadingComponent';
 
 interface SubscribersTableProps {
  
