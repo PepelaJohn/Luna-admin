@@ -164,7 +164,8 @@ TaskSchema.virtual('isOverdue').get(function(this: ITask) {
 // Virtual for task age in days
 TaskSchema.virtual('ageInDays').get(function(this: ITask) {
   const now = new Date();
-  const created = this.createdAt;
+ const created = new Date(this.createdAt as unknown as string);
+
   const diffTime = Math.abs(now.getTime() - created.getTime());
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });

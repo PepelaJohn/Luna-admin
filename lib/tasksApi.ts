@@ -34,24 +34,52 @@ export interface ITask {
 }
 
 export interface ITaskStats {
+  overall: Overall;
+  assignment: null;
+  byCategory: ByCategory[];
+  byPriority: ByPriority[];
+  recentActivity: RecentActivity[];
+  upcomingTasks: any[];
+}
+
+interface RecentActivity {
+  _id: string;
+  created: number;
+  completed: number;
+}
+
+interface ByPriority {
+  _id: string;
+  count: number;
+  completed: number;
+  overdue: number;
+}
+
+interface ByCategory {
+  _id: string;
+  count: number;
+  completed: number;
+  pending: number;
+  inProgress: number;
+}
+
+interface Overall {
+  _id: null;
   total: number;
   pending: number;
   inProgress: number;
   completed: number;
   cancelled: number;
   overdue: number;
-  byCategory: Record<string, number>;
-  byPriority: Record<string, number>;
-  recentActivity: {
-    date: string;
-    count: number;
-  }[];
-  upcomingDueDates: {
-    _id: string;
-    title: string;
-    dueDate: string;
-    priority: string;
-  }[];
+  highPriority: number;
+  urgentPriority: number;
+}
+
+
+
+interface ItaskStatsPromise {
+  success:boolean,
+  stats:ITaskStats
 }
 
 export interface ITaskFilters {
@@ -78,14 +106,20 @@ export interface ITasksResponse {
   };
 }
 
+interface ItaskResponsePromise{
+  success:boolean,
+  data:ITasksResponse
+}
+
 export interface ICreateTaskData {
   title: string;
   description: string;
-  assignedTo: string; // userId
+  assignedTo: IAssignableUser | null; // userId
   priority: 'low' | 'medium' | 'high' | 'urgent';
   dueDate?: string;
   category: string;
   attachments?: string[];
+  assignedToUserId?:string;
 }
 
 export interface IUpdateTaskData {
@@ -99,11 +133,14 @@ export interface IUpdateTaskData {
   attachments?: string[];
 }
 
-export interface IAssignableUser {
+export interface IAssignableUser  {
   _id: string;
   name: string;
   email: string;
-  role: 'admin' | 'super_admin';
+  role: string;
+  avatar: null;
+  canAssignTo: boolean;
+  joinedAt: string;
 }
 
 export interface ITaskMetadata {
@@ -160,7 +197,7 @@ class TasksAPI {
   }
 
   // Get all tasks with filters
-  async getTasks(filters: ITaskFilters = {}): Promise<ITasksResponse> {
+  async getTasks(filters: ITaskFilters = {}): Promise<ItaskResponsePromise> {
     const searchParams = new URLSearchParams();
     
     Object.entries(filters).forEach(([key, value]) => {
@@ -170,19 +207,19 @@ class TasksAPI {
     });
 
     const query = searchParams.toString();
-    const endpoint = `/api/tasks${query ? `?${query}` : ''}`;
+    const endpoint = `/tasks${query ? `?${query}` : ''}`;
     
-    return this.request<ITasksResponse>(endpoint);
+    return this.request<ItaskResponsePromise>(endpoint);
   }
 
   // Get single task by ID
   async getTask(taskId: string): Promise<{ task: ITask }> {
-    return this.request<{ task: ITask }>(`/api/tasks/${taskId}`);
+    return this.request<{ task: ITask }>(`/tasks/${taskId}`);
   }
 
   // Create new task
   async createTask(taskData: ICreateTaskData): Promise<{ task: ITask }> {
-    return this.request<{ task: ITask }>('/api/tasks', {
+    return this.request<{ task: ITask }>('/tasks', {
       method: 'POST',
       body: JSON.stringify(taskData),
     });
@@ -190,7 +227,7 @@ class TasksAPI {
 
   // Update task
   async updateTask(taskId: string, taskData: IUpdateTaskData): Promise<{ task: ITask }> {
-    return this.request<{ task: ITask }>(`/api/tasks/${taskId}`, {
+    return this.request<{ task: ITask }>(`/tasks/${taskId}`, {
       method: 'PUT',
       body: JSON.stringify(taskData),
     });
@@ -198,14 +235,14 @@ class TasksAPI {
 
   // Delete/Cancel task
   async deleteTask(taskId: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/api/tasks/${taskId}`, {
+    return this.request<{ message: string }>(`/tasks/${taskId}`, {
       method: 'DELETE',
     });
   }
 
   // Get task statistics
-  async getTaskStats(): Promise<ITaskStats> {
-    return this.request<ITaskStats>('/api/tasks/stats');
+  async getTaskStats(): Promise<ItaskStatsPromise> {
+    return this.request<ItaskStatsPromise>('/tasks/stats');
   }
 
   // Get task comments
@@ -219,12 +256,12 @@ class TasksAPI {
       hasPrevPage: boolean;
     };
   }> {
-    return this.request(`/api/tasks/${taskId}/comments?page=${page}&limit=${limit}`);
+    return this.request(`/tasks/${taskId}/comments?page=${page}&limit=${limit}`);
   }
 
   // Add comment to task
   async addTaskComment(taskId: string, message: string): Promise<{ task: ITask }> {
-    return this.request<{ task: ITask }>(`/api/tasks/${taskId}/comments`, {
+    return this.request<{ task: ITask }>(`/tasks/${taskId}/comments`, {
       method: 'POST',
       body: JSON.stringify({ message }),
     });
@@ -232,12 +269,12 @@ class TasksAPI {
 
   // Get assignable users
   async getAssignableUsers(): Promise<{ users: IAssignableUser[] }> {
-    return this.request<{ users: IAssignableUser[] }>('/api/tasks/assignable-users');
+    return this.request<{ users: IAssignableUser[] }>('/tasks/assignable-users');
   }
 
   // Get task metadata
   async getTaskMetadata(): Promise<ITaskMetadata> {
-    return this.request<ITaskMetadata>('/api/tasks/metadata');
+    return this.request<ITaskMetadata>('/tasks/metadata');
   }
 }
 
@@ -319,49 +356,7 @@ export const mockTasksResponse: ITasksResponse = {
   }
 };
 
-export const mockTaskStats: ITaskStats = {
-  total: 25,
-  pending: 8,
-  inProgress: 12,
-  completed: 4,
-  cancelled: 1,
-  overdue: 3,
-  byCategory: {
-    user_management: 8,
-    security_audit: 5,
-    system_config: 4,
-    content_review: 3,
-    maintenance: 3,
-    support: 2
-  },
-  byPriority: {
-    urgent: 5,
-    high: 8,
-    medium: 10,
-    low: 2
-  },
-  recentActivity: [
-    { date: '2025-06-12', count: 3 },
-    { date: '2025-06-11', count: 5 },
-    { date: '2025-06-10', count: 2 },
-    { date: '2025-06-09', count: 4 },
-    { date: '2025-06-08', count: 1 }
-  ],
-  upcomingDueDates: [
-    {
-      _id: '1',
-      title: 'Security audit review',
-      dueDate: '2025-06-15T10:00:00Z',
-      priority: 'urgent'
-    },
-    {
-      _id: '2',
-      title: 'Update user permissions',
-      dueDate: '2025-06-20T10:00:00Z',
-      priority: 'high'
-    }
-  ]
-};
+
 
 export const mockTaskMetadata: ITaskMetadata = {
   categories: [

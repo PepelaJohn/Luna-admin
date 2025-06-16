@@ -13,6 +13,7 @@ import {
   Sun,
   HelpCircle,
   FileText,
+  LucideWorkflow,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -72,6 +73,13 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: FileText, 
       description: "System activity and audit trail",
       href: "/logs"
+    },
+    {
+      id: "tasks",
+      label: "Tasks",
+      icon: LucideWorkflow, 
+      description: "Assigned tasks",
+      href: "/tasks"
     },
   ];
 

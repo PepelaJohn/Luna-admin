@@ -11,11 +11,11 @@ import {
   UNAUTHORIZED,
 } from "@/constants/http";
 import mongoose from "mongoose";
+import { NOtifyAdminuser } from "@/lib/email";
 
 // GET /api/tasks - Get all tasks for the user
 
 const getTasks = async (request: NextRequest) => {
- 
   try {
     await connectDB();
 
@@ -65,24 +65,24 @@ const getTasks = async (request: NextRequest) => {
       if (assignedToMe && assignedByMe) {
         // Both assigned to me and by me
         userConditions.push(
-          { "assignedTo.userId": new mongoose.Types.ObjectId(user.id) },
-          { "assignedBy.userId": new mongoose.Types.ObjectId(user.id) }
+          { "assignedTo.userId": new mongoose.Schema.Types.ObjectId(user.id) },
+          { "assignedBy.userId": new mongoose.Schema.Types.ObjectId(user.id) }
         );
       } else if (assignedToMe) {
         // Only assigned to me
         userConditions.push({
-          "assignedTo.userId": new mongoose.Types.ObjectId(user.id),
+          "assignedTo.userId": new mongoose.Schema.Types.ObjectId(user.id),
         });
       } else if (assignedByMe) {
         // Only assigned by me
         userConditions.push({
-          "assignedBy.userId": new mongoose.Types.ObjectId(user.id),
+          "assignedBy.userId": new mongoose.Schema.Types.ObjectId(user.id),
         });
       } else {
         // Default: tasks assigned to me or by me
         userConditions.push(
-          { "assignedTo.userId": new mongoose.Types.ObjectId(user.id) },
-          { "assignedBy.userId": new mongoose.Types.ObjectId(user.id) }
+          { "assignedTo.userId": new mongoose.Schema.Types.ObjectId(user.id) },
+          { "assignedBy.userId": new mongoose.Schema.Types.ObjectId(user.id) }
         );
       }
 
@@ -109,6 +109,7 @@ const getTasks = async (request: NextRequest) => {
     return returnSuccess({
       message: "Tasks retrieved successfully",
       data: {
+        data: {
         tasks,
         pagination: {
           currentPage: page,
@@ -117,6 +118,7 @@ const getTasks = async (request: NextRequest) => {
           hasNextPage: page < totalPages,
           hasPrevPage: page > 1,
         },
+      }
       },
       status: 200,
     });
@@ -146,15 +148,20 @@ const createTask = async (request: NextRequest) => {
     const {
       title,
       description,
-      assignedToUserId,
-      assignedToName,
-      assignedToEmail,
-      assignedToRole,
+
       priority = "medium",
       dueDate,
+      assignedTo,
       category,
       attachments = [],
     } = body;
+
+    const {
+      _id: assignedToUserId,
+      name: assignedToName,
+      email: assignedToEmail,
+      role: assignedToRole,
+    } = assignedTo;
 
     // Validation
     if (!title || title.trim().length === 0) {
@@ -238,7 +245,7 @@ const createTask = async (request: NextRequest) => {
     });
 
     await task.save();
-
+     await NOtifyAdminuser({description, email:assignedToEmail, name:user.name, title, username:assignedToName})
     // TODO: Create notification for assigned user
     // await createNotification({
     //   type: 'task_assigned',

@@ -51,7 +51,7 @@ const getAssignableUsers = async (request: NextRequest) => {
 
     // Format response with additional helpful information
     const formattedUsers = assignableUsers.map(assignableUser => ({
-      id: assignableUser._id,
+      _id: assignableUser._id,
       name: assignableUser.name,
       email: assignableUser.email,
       role: assignableUser.role,

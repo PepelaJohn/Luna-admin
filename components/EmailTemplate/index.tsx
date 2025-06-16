@@ -810,3 +810,229 @@ export function PasswordResetSuccessTemplate({
     </html>
   );
 }
+export function NotifyTaskAssigned({ 
+  username,
+  sender,
+  title,
+  description
+}: { 
+  username: string;
+  sender: string,
+  title: string,
+  description: string
+}) {
+  return (
+    <html lang="en" style={{ margin: 0, padding: 0 }}>
+      <head>
+        <meta charSet="UTF-8" />
+        <title>New Task Assigned - Luna</title>
+      </head>
+      <body style={{
+        margin: 0,
+        padding: 0,
+        fontFamily: 'Arial, sans-serif',
+        backgroundColor: '#ffffff',
+        color: '#000000'
+      }}>
+        <table 
+          width="100%" 
+          cellSpacing="0" 
+          cellPadding="0" 
+         style={{ backgroundColor: '#ffffff', maxWidth: '700px', margin: '0 auto', borderCollapse: 'collapse' }}
+        >
+          {/* Header with Logo */}
+          <tr>
+            <td 
+              align="center" 
+              style={{
+                padding: '20px 0',
+                backgroundColor: '#2c3e50'
+              }}
+            >
+            <img 
+                src="https://lunadrone.com/icon1.png" 
+                alt="Luna Logo" 
+                width="40" 
+                height="40" 
+              />
+            </td>
+          </tr>
+          
+          {/* Main Content */}
+          <tr>
+            <td 
+              align="center" 
+              style={{ padding: '40px 20px' }}
+            >
+              
+              
+              <h1 style={{
+                fontSize: '24px',
+                marginBottom: '20px',
+                margin: '0 0 20px 0',
+                color: '#007bff'
+              }}>
+                New Task Assigned
+              </h1>
+              
+              <p style={{
+                fontSize: '16px',
+                marginBottom: '30px',
+                margin: '0 0 30px 0',
+                textTransform: 'capitalize',
+              }}>
+                Hi <strong>{username}</strong>,
+              </p>
+              
+              <p style={{
+                fontSize: '16px',
+                maxWidth: '500px',
+                margin: '0 auto 30px',
+                lineHeight: '1.5'
+              }}>
+                You have been assigned a new task by <strong>{sender}</strong>. Please review the details below and take appropriate action.
+              </p>
+              
+              {/* Task Details Card */}
+              <div style={{
+                backgroundColor: '#f8f9fa',
+                border: '1px solid #dee2e6',
+                borderRadius: '8px',
+                padding: '20px',
+                maxWidth: '500px',
+                margin: '0 auto 30px',
+                textAlign: 'left'
+              }}>
+                <h3 style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  margin: '0 0 15px 0',
+                  color: '#333'
+                }}>
+                  Task Details
+                </h3>
+                
+                <p style={{
+                  fontSize: '14px',
+                  margin: '0 0 10px 0',
+                  color: '#666'
+                }}>
+                  <strong>Title:</strong> {title}
+                </p>
+                
+                <p style={{
+                  fontSize: '14px',
+                  margin: '0 0 10px 0',
+                  color: '#666'
+                }}>
+                  <strong>Assigned by:</strong> {sender}
+                </p>
+                
+                <p style={{
+                  fontSize: '14px',
+                  margin: '0',
+                  color: '#666'
+                }}>
+                  <strong>Description:</strong>
+                </p>
+                <p style={{
+                  fontSize: '14px',
+                  margin: '5px 0 0 0',
+                  color: '#333',
+                  lineHeight: '1.5'
+                }}>
+                  {description}
+                </p>
+              </div>
+              
+             
+              
+              <div style={{
+                marginTop: '40px',
+                padding: '20px',
+                backgroundColor: '#fff3cd',
+                border: '1px solid #ffeaa7',
+                borderRadius: '8px',
+                maxWidth: '500px',
+                margin: '40px auto 0'
+              }}>
+                <h3 style={{
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  margin: '0 0 10px 0',
+                  color: '#856404'
+                }}>
+                  Important Reminder:
+                </h3>
+                <p style={{
+                  fontSize: '12px',
+                  color: '#856404',
+                  margin: '0',
+                  lineHeight: '1.4'
+                }}>
+                  Please acknowledge receipt of this task and provide updates on your progress. 
+                  Log in to your dashboard to manage your tasks and communicate with your team.
+                </p>
+              </div>
+            </td>
+          </tr>
+          
+          {/* Footer */}
+          <tr>
+            <td 
+              align="center" 
+              style={{
+                backgroundColor: '#f1f1f1',
+                padding: '30px 20px'
+              }}
+            >
+              <p style={{
+                fontSize: '12px',
+                color: '#888',
+                marginBottom: '10px',
+                margin: '0 0 10px 0'
+              }}>
+                Luna Inc., Nairobi, Kenya
+              </p>
+              
+              <p style={{
+                fontSize: '12px',
+                color: '#888',
+                margin: '0'
+              }}>
+                <a 
+                  href="https://lunadrone.com/privacy-policy" 
+                  style={{
+                    color: '#888',
+                    margin: '0 8px'
+                  }}
+                >
+                  Privacy Policy
+                </a>
+                {' | '}
+                <a 
+                  href="https://lunadrone.com/terms-and-conditions" 
+                  style={{
+                    color: '#888',
+                    margin: '0 8px'
+                  }}
+                >
+                  Terms of Service
+                </a>
+              </p>
+              
+              <p style={{
+                fontSize: '12px',
+                color: '#aaa',
+                marginTop: '10px',
+                margin: '10px 0 0 0'
+              }}>
+                © 2025 Luna Inc.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  );
+}

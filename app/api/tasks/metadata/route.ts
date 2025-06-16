@@ -65,7 +65,7 @@ const getTaskMetadata = async (request: NextRequest) => {
 
   return returnSuccess({
     message: 'Task metadata retrieved successfully',
-    data: metadata,
+    data: {metadata},
     status: 200
   });
 };

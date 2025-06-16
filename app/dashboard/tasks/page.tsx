@@ -12,7 +12,8 @@ import {
   Search
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { tasksApi, ITaskStats, ITask, mockTaskStats, mockTasksResponse } from '@/lib/tasksApi';
+import { tasksApi, ITaskStats, ITask,  mockTasksResponse } from '@/lib/tasksApi';
+import Link from 'next/link';
 
 // Quick Stats Card Component
 const StatsCard = ({ title, value, icon: Icon, color, trend }: {
@@ -70,7 +71,7 @@ const RecentTasks = ({ tasks }: { tasks: ITask[] }) => (
       </button>
     </div>
     <div className="space-y-4">
-      {tasks.slice(0, 5).map((task, index) => (
+      {tasks.slice(0, 5)?.map((task, index) => (
         <motion.div
           key={task._id}
           initial={{ opacity: 0, y: 20 }}
@@ -97,14 +98,16 @@ const RecentTasks = ({ tasks }: { tasks: ITask[] }) => (
 );
 
 // Upcoming Deadlines Component
-const UpcomingDeadlines = ({ tasks }: { tasks: ITaskStats['upcomingDueDates'] }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+const UpcomingDeadlines = ({ tasks }: { tasks: ITaskStats['upcomingTasks'] }) => {
+  console.log(tasks)
+  return (
+    <div className="bg-white h-full rounded-xl shadow-sm border border-gray-200 p-6">
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-lg font-semibold text-gray-900">Upcoming Deadlines</h3>
       <Calendar className="w-5 h-5 text-gray-400" />
     </div>
     <div className="space-y-3">
-      {tasks.map((task, index) => (
+      {tasks?.map((task, index) => (
         <motion.div
           key={task._id}
           initial={{ opacity: 0, x: -20 }}
@@ -123,18 +126,22 @@ const UpcomingDeadlines = ({ tasks }: { tasks: ITaskStats['upcomingDueDates'] })
       ))}
     </div>
   </div>
-);
+  )
+};
 
 // Category Distribution Chart (Simple)
-const CategoryChart = ({ data }: { data: Record<string, number> }) => {
-  const total = Object.values(data).reduce((sum, value) => sum + value, 0);
+const CategoryChart = ({ data }: { data: ITaskStats['byCategory'] }) => {
+ 
+  const total = Object.values(data).reduce((sum, data) => sum + data.count, 0);
   
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl h-full shadow-sm border border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Tasks by Category</h3>
       <div className="space-y-3">
-        {Object.entries(data).map(([category, count], index) => {
+        {data?.map(({ count, _id:category}, index) => {
+         
           const percentage = (count / total) * 100;
+          
           return (
             <motion.div
               key={category}
@@ -177,20 +184,30 @@ const TasksDashboard = () => {
         setLoading(true);
         
         // In development, use mock data
-        if (process.env.NODE_ENV === 'development') {
-          setStats(mockTaskStats);
-          setRecentTasks(mockTasksResponse.tasks);
-        } else {
-          // Production API calls
+        // Production API calls
           const [statsResponse, tasksResponse] = await Promise.all([
             tasksApi.getTaskStats(),
             tasksApi.getTasks({ limit: 10, sortBy: 'createdAt', sortOrder: 'desc' })
           ]);
+
+          console.log(statsResponse, tasksResponse)
           
-          setStats(statsResponse);
-          setRecentTasks(tasksResponse.tasks);
-        }
+
+          if((statsResponse).success && statsResponse.stats){
+
+            setStats((statsResponse).stats);
+          } else{
+
+          }
+
+          if(tasksResponse.success && tasksResponse.data){
+
+            setRecentTasks(tasksResponse.data.tasks);
+          }
+          
       } catch (err) {
+        // setStats(mockTaskStats);
+          setRecentTasks(mockTasksResponse.tasks);
         setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
       } finally {
         setLoading(false);
@@ -207,7 +224,7 @@ const TasksDashboard = () => {
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {[1, 2, 3, 4].map((i) => (
+              {[1, 2, 3, 4]?.map((i) => (
                 <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
               ))}
             </div>
@@ -239,7 +256,7 @@ const TasksDashboard = () => {
     );
   }
 
-  if (!stats) return null;
+  if (!stats) return <div className='p-8'>Nothing to show here</div>;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -261,10 +278,10 @@ const TasksDashboard = () => {
               <Filter className="w-4 h-4" />
               Filter
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <Link href={'/dashboard/tasks/new'} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
               <Plus className="w-4 h-4" />
               New Task
-            </button>
+            </Link>
           </div>
         </motion.div>
 
@@ -277,31 +294,28 @@ const TasksDashboard = () => {
         >
           <StatsCard
             title="Total Tasks"
-            value={stats.total}
+            value={stats.overall.total}
             icon={CheckCircle}
             color="bg-blue-600"
-            trend={{ value: 12, isPositive: true }}
+            
           />
           <StatsCard
             title="In Progress"
-            value={stats.inProgress}
+            value={stats.overall.inProgress}
             icon={Clock}
             color="bg-orange-600"
-            trend={{ value: 8, isPositive: true }}
           />
           <StatsCard
             title="Completed"
-            value={stats.completed}
+            value={stats.overall.completed}
             icon={CheckCircle}
             color="bg-green-600"
-            trend={{ value: 15, isPositive: true }}
           />
           <StatsCard
             title="Overdue"
-            value={stats.overdue}
+            value={stats.overall.overdue}
             icon={AlertTriangle}
             color="bg-red-600"
-            trend={{ value: 5, isPositive: false }}
           />
         </motion.div>
 
@@ -322,8 +336,9 @@ const TasksDashboard = () => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
+            className='h-full '
           >
-            <UpcomingDeadlines tasks={stats.upcomingDueDates} />
+            <UpcomingDeadlines tasks={stats.upcomingTasks} />
           </motion.div>
         </div>
 
@@ -347,10 +362,10 @@ const TasksDashboard = () => {
           >
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 transition-colors">
+              <Link href={'/dashboard/tasks/new'} className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 transition-colors">
                 <Plus className="w-5 h-5 text-blue-600" />
                 <span className="font-medium">Create New Task</span>
-              </button>
+              </Link>
               <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 transition-colors">
                 <Search className="w-5 h-5 text-green-600" />
                 <span className="font-medium">Search Tasks</span>

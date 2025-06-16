@@ -230,11 +230,13 @@ const getTaskStats = async (request: NextRequest) => {
 
     return returnSuccess({
       message: 'Task statistics retrieved successfully',
-      data: stats,
+      data: {stats},
       status: 200
     });
 
   } catch (error: any) {
+
+    console.log(error)
     return returnError({
       message: error.message || "Could not retrieve task statistics",
       error,

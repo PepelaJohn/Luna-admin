@@ -3,7 +3,7 @@
 // @/lib/email.ts
 import { Resend } from 'resend';
 import { getEnvironmentVariable } from './utils';
-import { EmailVerificationTemplate } from '@/components/EmailTemplate';
+import { EmailVerificationTemplate, NotifyTaskAssigned } from '@/components/EmailTemplate';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -69,6 +69,23 @@ export async function sendConfirmationStartupEmail({email, token, name}:{email:s
   });
 
   if (error) throw error;
+  return data;
+}
+
+
+export async function NOtifyAdminuser({email, name:sender, username, title, description}:{email:string, username:string, name:string, title:string, description:string}){
+  const { data, error } = await resend.emails.send({
+    from: "LunaDrone <newtasks@lunadrone.com>",
+    to: [email],
+    subject: "New Task Assigned - Luna",
+    react: NotifyTaskAssigned({  description, sender, title, username }),
+    headers: {
+     
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+    }
+  });
+
+  if (error)  return;
   return data;
 }
 
