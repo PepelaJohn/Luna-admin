@@ -271,7 +271,6 @@ const UsersTable: React.FC<UsersTableProps> = ({
         updateUserData: editFormData
       });
       
-      console.log(response);
       
       if (response.success) {
         setSuccessMessage(response.message || "User updated successfully!");

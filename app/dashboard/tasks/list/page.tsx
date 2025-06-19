@@ -27,6 +27,7 @@ import {
   mockTasksResponse,
   mockTaskMetadata,
 } from "@/lib/tasksApi";
+import { usePopup } from "@/context/PopupContext";
 
 // Status Badge Component
 const StatusBadge = ({ status }: { status: string }) => {
@@ -363,6 +364,7 @@ const TasksList = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const {showError,  showSuccess} = usePopup()
 
   // Mock metadata
   const metadata = mockTaskMetadata;
@@ -440,7 +442,7 @@ const TasksList = () => {
       await tasksApi.deleteTask(taskId);
       fetchTasks(); // Refresh the list
     } catch (err) {
-      alert("Failed to delete task");
+      showError("Failed to delete task");
     }
   };
 

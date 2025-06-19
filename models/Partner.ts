@@ -1,153 +1,150 @@
-// models/Partner.js
-import mongoose from 'mongoose';
+// models/Partner.ts
+import mongoose, { Document, Schema } from 'mongoose';
 
-const PartnerSchema = new mongoose.Schema({
+export interface IPartner extends Document {
+  firstName: string;
+  lastName: string;
+  email: string;
+  jobTitle: string;
+  companyName: string;
+  industry?: string;
+  region: string;
+  interest: string;
+  deliveryNeeds?: string;
+  status: "pending" | "reviewing" | "approved" | "rejected";
+  priority: 'low' | 'medium' | 'high';
+  notes?: string;
+  contactedAt?: Date;
+  followUpDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  approvedDate?: string;
+  phone?:string;
+}
 
-  companyName: {
-    type: String,
-    required: [true, 'Company name is required'],
-    trim: true,
-    maxlength: [100, 'Company name cannot exceed 100 characters']
+const PartnerSchema: Schema = new Schema(
+  {
+    firstName: {
+      type: String,
+      required: [true, 'First name is required'],
+      trim: true,
+      maxlength: [50, 'First name cannot exceed 50 characters'],
+    },
+    phone:String,
+    lastName: {
+      type: String,
+      required: [true, 'Last name is required'],
+      trim: true,
+      maxlength: [50, 'Last name cannot exceed 50 characters'],
+    },
+    email: {
+      index:true,
+      type: String,
+      required: [true, 'Email is required'],
+      unique: true,
+      trim: true,
+      lowercase: true,
+      match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email address'],
+    },
+    jobTitle: {
+      type: String,
+      required: [true, 'Job title is required'],
+      trim: true,
+      maxlength: [100, 'Job title cannot exceed 100 characters'],
+    },
+    companyName: {
+      type: String,
+      required: [true, 'Company name is required'],
+      trim: true,
+      maxlength: [100, 'Company name cannot exceed 100 characters'],
+    },
+    approvedDate: {
+      type:String
+    },
+    industry: {
+      type: String,
+      enum: ['healthcare', 'government', 'logistics', 'retail', 'agriculture', 'ngo', 'other'],
+      trim: true,
+    },
+    region: {
+      type: String,
+      required: [true, 'Region is required'],
+      enum: ['nairobi', 'central', 'coast', 'western', 'eastern', 'northern', 'rift-valley', 'national'],
+    },
+    interest: {
+      type: String,
+      required: [true, 'Interest area is required'],
+      enum: [
+        'partnership',
+        'medical-delivery',
+        'emergency-services',
+        'logistics-solution',
+        'pilot-program',
+        'consultation'
+      ],
+    },
+    deliveryNeeds: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Delivery needs cannot exceed 1000 characters'],
+    },
+    status: {
+      type: String,
+      enum: ["pending", "reviewing", "approved", "rejected"],
+      default: 'pending',
+    },
+    priority: {
+      type: String,
+      enum: ['low', 'medium', 'high'],
+      default: 'medium',
+    },
+    notes: {
+      type: String,
+      trim: true,
+      maxlength: [2000, 'Notes cannot exceed 2000 characters'],
+    },
+    contactedAt: {
+      type: Date,
+    },
+    followUpDate: {
+      type: Date,
+    },
   },
-  contactPerson: {
-    type: String,
-    required: [true, 'Contact person is required'],
-    trim: true,
-    maxlength: [50, 'Contact person name cannot exceed 50 characters']
-  },
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    trim: true,
-    lowercase: true,
-    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
-  },
-  phone: {
-    type: String,
-    required: [true, 'Phone number is required'],
-    trim: true,
-    match: [/^\+?[\d\s\-\(\)]+$/, 'Please provide a valid phone number']
-  },
-  website: {
-    type: String,
-    trim: true,
-    match: [/^https?:\/\/.+/, 'Please provide a valid website URL']
-  },
-  industry: {
-    type: String,
-    required: [true, 'Industry is required'],
-    enum: {
-      values: ['retail', 'healthcare', 'ecommerce', 'logistics', 'food', 'other'],
-      message: 'Please select a valid industry'
-    }
-  },
-  businessType: {
-    type: String,
-    required: [true, 'Business type is required'],
-    enum: {
-      values: ['b2b', 'b2c', 'both'],
-      message: 'Please select a valid business type'
-    }
-  },
-  location: {
-    type: String,
-    required: [true, 'Location is required'],
-    trim: true,
-    maxlength: [100, 'Location cannot exceed 100 characters']
-  },
-
- 
-  monthlyOrders: {
-    type: String,
-    enum: {
-      values: ['0-100', '100-500', '500-1000', '1000-5000', '5000+', ''],
-      message: 'Please select a valid monthly orders range'
-    }
-  },
-  averageOrderValue: {
-    type: String,
-    enum: {
-      values: ['0-1000', '1000-5000', '5000-10000', '10000+', ''],
-      message: 'Please select a valid average order value range'
-    }
-  },
-  currentDeliveryMethod: {
-    type: String,
-    trim: true,
-    maxlength: [200, 'Current delivery method cannot exceed 200 characters']
-  },
-  partnershipGoals: {
-    type: String,
-    trim: true,
-    maxlength: [1000, 'Partnership goals cannot exceed 1000 characters']
-  },
-  additionalInfo: {
-    type: String,
-    trim: true,
-    maxlength: [1000, 'Additional information cannot exceed 1000 characters']
-  },
-
-  // Metadata
-  status: {
-    type: String,
-    enum: ['pending', 'reviewing', 'approved', 'rejected'],
-    default: 'pending'
-  },
-  submittedAt: {
-    type: Date,
-    default: Date.now
-  },
-  reviewedAt: {
-    type: Date
-  },
-  reviewedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  notes: {
-    type: String,
-    trim: true
+  {
+    timestamps: true,
   }
-}, {
-  timestamps: true
-});
+);
 
 // Indexes for better query performance
-PartnerSchema.index({ email: 1 });
-PartnerSchema.index({ companyName: 1 });
-PartnerSchema.index({ status: 1 });
-PartnerSchema.index({ submittedAt: -1 });
 
-// Virtual for formatted submission date
-PartnerSchema.virtual('formattedSubmissionDate').get(function() {
-  return this.submittedAt.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+PartnerSchema.index({ status: 1 });
+PartnerSchema.index({ priority: 1 });
+PartnerSchema.index({ region: 1 });
+PartnerSchema.index({ industry: 1 });
+PartnerSchema.index({ createdAt: -1 });
+
+// Virtual for full name
+PartnerSchema.virtual('fullName').get(function() {
+  return `${this.firstName} ${this.lastName}`;
 });
 
-// Static method to get partners by status
-PartnerSchema.statics.getByStatus = function(status) {
-  return this.find({ status }).sort({ submittedAt: -1 });
-};
+// Middleware to automatically set priority based on interest and industry
+PartnerSchema.pre('save', function(next) {
+  if (this.isNew) {
+    // Set high priority for healthcare, government, and partnership interests
+    if (
+      this.industry === 'healthcare' || 
+      this.industry === 'government' || 
+      this.interest === 'partnership'
+    ) {
+      this.priority = 'high';
+    } else if (this.interest === 'pilot-program' || this.interest === 'medical-delivery') {
+      this.priority = 'medium';
+    } else {
+      this.priority = 'low';
+    }
+  }
+  next();
+});
 
-// Instance method to approve partnership
-PartnerSchema.methods.approve = function(reviewerId: any, notes: any) {
-  this.status = 'approved';
-  this.reviewedAt = new Date();
-  this.reviewedBy = reviewerId;
-  if (notes) this.notes = notes;
-  return this.save();
-};
-
-// Instance method to reject partnership
-PartnerSchema.methods.reject = function(reviewerId: any, notes: any) {
-  this.status = 'rejected';
-  this.reviewedAt = new Date();
-  this.reviewedBy = reviewerId;
-  if (notes) this.notes = notes;
-  return this.save();
-};
-
-export default mongoose.models.Partner || mongoose.model('Partner', PartnerSchema);
+export default mongoose.models.Partner || mongoose.model<IPartner>('Partner', PartnerSchema);

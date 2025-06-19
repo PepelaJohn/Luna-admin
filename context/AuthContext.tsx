@@ -12,6 +12,9 @@ interface User {
   avatar?: string;
   isEmailVerified: boolean;
   lastLogin?: Date;
+  phone?:string;
+  isActive:boolean;
+  multifactorAuthentication:boolean
 }
 
 interface AuthContextType {
@@ -52,6 +55,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const data = await authApi.me();
       
       if (data.success && data.user) {
+        
         setUser(data.user);
       } else {
         setUser(null);

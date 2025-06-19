@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, Shield, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { Loading } from '@/components/LoadingComponent';
 
 interface FormData {
   name: string;
@@ -22,6 +24,7 @@ export default function AuthPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const authParam = searchParams.get('auth');
+  const {loading:userloading, isAuthenticated} = useAuth()
   
   const [isLogin, setIsLogin] = useState(authParam === 'login');
   const [showPassword, setShowPassword] = useState(false);
@@ -254,6 +257,14 @@ export default function AuthPage() {
     setErrors({});
     setMessage(null);
   };
+
+  useEffect(()=>{
+    if(isAuthenticated){
+      router.replace('/dashboard')
+    }
+  },[isAuthenticated])
+
+  if(userloading) return <Loading dark full></Loading>
 
   if (showVerification) {
     return VerificationComponent(verificationEmail, message, verificationCode, setVerificationCode, handleVerification, loading, resendVerification);

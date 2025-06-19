@@ -99,7 +99,7 @@ const RecentTasks = ({ tasks }: { tasks: ITask[] }) => (
 
 // Upcoming Deadlines Component
 const UpcomingDeadlines = ({ tasks }: { tasks: ITaskStats['upcomingTasks'] }) => {
-  console.log(tasks)
+
   return (
     <div className="bg-white h-full rounded-xl shadow-sm border border-gray-200 p-6">
     <div className="flex items-center justify-between mb-4">
@@ -190,7 +190,6 @@ const TasksDashboard = () => {
             tasksApi.getTasks({ limit: 10, sortBy: 'createdAt', sortOrder: 'desc' })
           ]);
 
-          console.log(statsResponse, tasksResponse)
           
 
           if((statsResponse).success && statsResponse.stats){

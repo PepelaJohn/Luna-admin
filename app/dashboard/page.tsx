@@ -1,12 +1,13 @@
 'use client'
 import LogsTable from "@/components/admin/LogsTable";
-import PartnersTable from "@/components/admin/PartnersTable";
+import PartnersTable from "@/components/admin/PartnersTableLarge";
 import StatsGrid from "@/components/admin/StatsGrid";
 import SubscribersTable from "@/components/admin/SubscribersTable";
 import UsersTable from "@/components/admin/UserTable";
 import { Loading } from "@/components/LoadingComponent";
 import { useData } from "@/hooks/useData";
 import { useLogs } from "@/hooks/useLogs";
+import { usePartnerStats } from "@/hooks/usePartnersStats";
 import { useSubscribers } from "@/hooks/useSubscribers";
 import Link from "next/link";
 import React from "react";
@@ -16,60 +17,13 @@ const DashBoardHomepage = () => {
   const { users, loading } = useData();
   const {  totalSubs } = useSubscribers();
   const { logs } = useLogs();
-
-  const mockData = {
-    partners: [
-      {
-        _id: "1",
-        companyName: "Naivas Supermarket",
-        status: "approved" as const,
-        industry: "retail" as const,
-        submittedAt: new Date("2024-01-15"),
-        contactPerson: "John Doe",
-        email: "john@naivas.com",
-        phone: "+254700000000",
-        businessType: "b2c" as const,
-        location: "Nairobi",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        _id: "2",
-        companyName: "Safaricom Ltd",
-        status: "pending" as const,
-        industry: "other" as const,
-        submittedAt: new Date("2024-01-14"),
-        contactPerson: "Jane Smith",
-        email: "jane@safaricom.com",
-        phone: "+254700000001",
-        businessType: "b2b" as const,
-        location: "Nairobi",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ],
-    subscribers: [
-      {
-        _id: "1",
-        email: "john@example.com",
-        confirmed: true,
-        subscribedAt: new Date("2024-01-15"),
-        token: "token1",
-        isActive: true,
-      },
-      {
-        _id: "2",
-        email: "jane@example.com",
-        confirmed: false,
-        subscribedAt: new Date("2024-01-14"),
-        token: "token2",
-        isActive: true,
-      },
-    ],
+  const {stats, loading:statsLoading} = usePartnerStats()
+ 
+  const statsData = {
     stats: {
-      totalPartners: 45,
-      pendingPartners: 12,
-      approvedPartners: 28,
+      totalPartners: stats?.totalPartners || 0,
+      pendingPartners: stats?.pendingPartners || 0,
+      approvedPartners: stats?.approvedPartners || 0,
       totalSubscribers: totalSubs,
       confirmedSubscribers: totalSubs,
       monthlyGrowth: 15.2,
@@ -89,7 +43,7 @@ const DashBoardHomepage = () => {
   };
   return (
     <div className="space-y-6">
-      <StatsGrid stats={mockData.stats} />
+      <StatsGrid stats={statsData.stats} />
 
       {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -97,7 +51,7 @@ const DashBoardHomepage = () => {
           <h3 className="text-lg font-semibold mb-4">
             Recent Partner Applications
           </h3>
-          <PartnersTable partners={mockData.partners.slice(0, 3)} isCompact />
+          { statsLoading ? <Loading></Loading> : <PartnersTable  isCompact />}
         </div>
 
         <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">

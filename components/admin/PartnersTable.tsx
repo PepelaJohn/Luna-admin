@@ -5,8 +5,7 @@
 // ===========================================
 'use client';
 
-import React from 'react';
-import { Partner } from '@/lib/types';
+import React, { useEffect, useState } from 'react';
 import { 
   CheckCircle, 
   Clock, 
@@ -14,12 +13,61 @@ import {
   XCircle 
 } from 'lucide-react';
 
+import { Loading } from '../LoadingComponent';
+import { partnersApi } from '@/lib/api';
+import { Partner } from '@/types/api';
+
 interface PartnersTableProps {
-  partners: Partner[];
   isCompact?: boolean;
 }
 
-const PartnersTable: React.FC<PartnersTableProps> = ({ partners, isCompact = false }) => {
+
+export interface PartnersApiResponse {
+  success: boolean;
+  data: {
+    partners: Partner[];
+    pagination: IPagination;
+  };
+}
+
+export interface IPagination {
+  total: number;
+  page: number;
+  pages: number;
+  limit: number;
+}
+
+
+const PartnersTable: React.FC<PartnersTableProps> = ({  isCompact = false }) => {
+
+
+  
+
+const [loading, setLoading] = useState(false);
+
+
+
+const [partners, setPartners] = useState<Partner[]>([]);
+
+useEffect(()=>{
+  setLoading(true)
+  const getPartners = async ()=>{
+    // can add params such as industry, interest, priority,region ,sortBy, status
+    // Industry categories are Healthcare Government Logistics Retail agriculture NGO Other
+    // Regions are Nairobi, Central Kenya Coast Western Eastern Nothern Rift Valley International
+    // priority is 'low' | 'medium' | 'high';  
+    // status: "pending" | "reviewing" | "approved" | "rejected";
+    const response:PartnersApiResponse = await partnersApi.getPartners({limit : isCompact ? 3 : 10, page:1})
+    console.log(response)
+    if(response.success){
+      console.log(response.data)
+      setPartners(response.data.partners)
+    }
+    setLoading(false)
+  }
+  getPartners()
+},[])
+ 
   const getStatusColor = (status: Partner['status']) => {
     switch (status) {
       case 'approved': return 'text-green-600 bg-green-100';
@@ -40,10 +88,12 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners, isCompact = fal
     }
   };
 
+  if(loading) return <Loading></Loading>
+
   if (isCompact) {
     return (
       <div className="space-y-3">
-        {partners.map((partner) => (
+        {partners?.slice(0,3).map((partner) => (
           <div key={partner._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex-1 min-w-0">
               <p className="font-medium text-gray-900 truncate text-sm lg:text-base">{partner.companyName}</p>
@@ -60,7 +110,7 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners, isCompact = fal
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto ">
       <table className="w-full">
         <thead className="bg-gray-50">
           <tr>
@@ -71,7 +121,7 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners, isCompact = fal
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
-          {partners.map((partner) => (
+          {partners?.map((partner) => (
             <tr key={partner._id} className="hover:bg-gray-50">
               <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                 <div className="font-medium text-gray-900 text-sm lg:text-base">{partner.companyName}</div>
@@ -86,7 +136,7 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners, isCompact = fal
                 </div>
               </td>
               <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {partner.submittedAt.toLocaleDateString()}
+                { new Date(partner?.createdAt).toLocaleDateString()}
               </td>
             </tr>
           ))}

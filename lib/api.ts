@@ -6,6 +6,11 @@ import axios, {
 } from "axios";
 import { AuthResponse } from "@/types/auth";
 import { CreateUserFormData, LogResponse, UpdateuserData, User } from "./types";
+import {
+  FetchPartnersParams,
+  IStatsResponse,
+  PartnersApiResponse,
+} from "@/types/api";
 
 // Default axios instance for regular API calls
 export const API: AxiosInstance = axios.create({
@@ -102,7 +107,7 @@ API.interceptors.response.use(
         isRefreshing = false;
       }
     }
-   
+
     return error.response.data;
   }
 );
@@ -236,7 +241,6 @@ export const usersApi = {
 
   createUser: async (createUserData: CreateUserFormData) => {
     const response: any = await API.post("/users", createUserData);
-    
 
     if (response?.data?.success) {
       return response.data;
@@ -244,14 +248,20 @@ export const usersApi = {
       return response;
     }
   },
-  updateUser: async ({updateUserData, id}:{id:string,updateUserData:UpdateuserData})=>{
-    const response:any = await API.put(`/users/${id}`, updateUserData)
+  updateUser: async ({
+    updateUserData,
+    id,
+  }: {
+    id: string;
+    updateUserData: UpdateuserData;
+  }) => {
+    const response: any = await API.put(`/users/${id}`, updateUserData);
     if (response?.data?.success) {
       return response.data;
     } else {
       return response;
     }
-  }
+  },
 };
 
 interface ILogResponse {
@@ -308,6 +318,38 @@ export const subsApi = {
       return response.data;
     } else {
       return response as unknown as ISubResponse;
+    }
+  },
+};
+
+export const partnersApi = {
+  getPartners: async (
+    params: FetchPartnersParams
+  ): Promise<PartnersApiResponse> => {
+    const queryParams = new URLSearchParams();
+
+    // Add filters and options to the query string
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, String(value));
+      }
+    });
+
+    const response = await API.get<PartnersApiResponse>(
+      `/partners?${queryParams.toString()}`
+    );
+    if (response?.data?.success) {
+      return response.data;
+    } else {
+      return response as any;
+    }
+  },
+  getPartnerStats: async (): Promise<IStatsResponse> => {
+    const response = await API.get("/partners/stats");
+    if (response?.data?.success) {
+      return response.data;
+    } else {
+      return response as unknown as IStatsResponse;
     }
   },
 };

@@ -14,6 +14,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 
+
 interface StatsGridProps {
   stats: {
     totalPartners: number;
@@ -25,6 +26,7 @@ interface StatsGridProps {
 }
 
 const StatsGrid: React.FC<StatsGridProps> = ({ stats }) => {
+ 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
       <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
@@ -71,7 +73,7 @@ const StatsGrid: React.FC<StatsGridProps> = ({ stats }) => {
       <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-600">Confirmed</p>
+            <p className="text-sm text-gray-600">Confirmed Subscribers</p>
             <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stats.confirmedSubscribers}</p>
           </div>
           <div className="p-3 bg-green-100 rounded-lg">

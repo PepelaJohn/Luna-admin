@@ -198,13 +198,11 @@ const CreateUserPage: React.FC = () => {
         
       const response = await usersApi.createUser(formData)
        
-        console.log(response)
 
       if (!response.success) {
         if (response.status === 409) {
           setErrors({ email: "A user with this email already exists" });
         } else {
-            console.log(response)
           setErrors({ general: response.message || "Failed to create user" });
         }
         return;

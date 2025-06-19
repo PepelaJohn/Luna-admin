@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -36,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const profileMenuRef = useRef<HTMLDivElement>(null);
   // const [activeTab, setActiveTab] = useState<string>("dashboard"); // Default to dashboard
   const { user, logout } = useAuth();
-
+const router = useRouter()
   const sidebarItems = [
     { 
       id: "dashboard", 
@@ -50,7 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       label: "Partners", 
       icon: Building2,
       description: "Manage partnerships",
-      badge: "12",
+      
       href: "/partners"
     },
     { 
@@ -88,7 +89,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       id: "profile", 
       label: "My Profile", 
       icon: User,
-      action: () => console.log("Profile clicked")
+      action: () => {router.push('/profile')}
     },
     { 
       id: "settings", 
@@ -238,11 +239,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       <div className="flex-1 text-left">
                         <div className="flex items-center justify-between">
                           <span className="font-medium">{item.label}</span>
-                          {item.badge && (
-                            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                              {item.badge}
-                            </span>
-                          )}
+                         
                         </div>
                         <p className="text-xs text-slate-400 mt-0.5">{item.description}</p>
                       </div>

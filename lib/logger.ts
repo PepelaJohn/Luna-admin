@@ -27,7 +27,6 @@ export class Logger {
   static async log(entry: LogEntry): Promise<void> {
     try {
       await connectDB();
-      console.log(entry)
       const logEntry = new Log({
         ...entry,
         entityId: entry.entityId || "unknown",

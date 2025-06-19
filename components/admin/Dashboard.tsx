@@ -342,7 +342,7 @@ const Dashboard: React.FC = () => {
                       Recent Partner Applications
                     </h3>
                     <PartnersTable
-                      partners={mockData.partners.slice(0, 3)}
+                     
                       isCompact
                     />
                   </div>
@@ -491,7 +491,7 @@ function Patners(mockData: {
         Manage and review partnership requests
       </p>
     </div>
-    <PartnersTable partners={mockData.partners} />
+    <PartnersTable  />
   </div>;
 }
 

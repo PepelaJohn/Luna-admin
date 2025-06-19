@@ -50,6 +50,9 @@ export interface AuthResponse {
       avatar?: string;
       isEmailVerified: boolean;
       lastLogin?: Date;
+      phone?:string;
+      isActive:boolean;
+      multifactorAuthentication:boolean;
    
   };
   status: number;

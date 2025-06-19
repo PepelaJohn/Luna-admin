@@ -351,7 +351,6 @@ export const DownloadButton = ({ logs }:{ logs: LogResponse[] }) => {
 
   const handleDownload = (format: "csv" | "txt") => {
     if (logs.length === 0) {
-      alert("No logs available to download");
       return;
     }
 

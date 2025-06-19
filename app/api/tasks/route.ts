@@ -65,24 +65,24 @@ const getTasks = async (request: NextRequest) => {
       if (assignedToMe && assignedByMe) {
         // Both assigned to me and by me
         userConditions.push(
-          { "assignedTo.userId": new mongoose.Schema.Types.ObjectId(user.id) },
-          { "assignedBy.userId": new mongoose.Schema.Types.ObjectId(user.id) }
+          { "assignedTo.userId": new mongoose.Types.ObjectId(user.id) },
+          { "assignedBy.userId": new mongoose.Types.ObjectId(user.id) }
         );
       } else if (assignedToMe) {
         // Only assigned to me
         userConditions.push({
-          "assignedTo.userId": new mongoose.Schema.Types.ObjectId(user.id),
+          "assignedTo.userId": new mongoose.Types.ObjectId(user.id),
         });
       } else if (assignedByMe) {
         // Only assigned by me
         userConditions.push({
-          "assignedBy.userId": new mongoose.Schema.Types.ObjectId(user.id),
+          "assignedBy.userId": new mongoose.Types.ObjectId(user.id),
         });
       } else {
         // Default: tasks assigned to me or by me
         userConditions.push(
-          { "assignedTo.userId": new mongoose.Schema.Types.ObjectId(user.id) },
-          { "assignedBy.userId": new mongoose.Schema.Types.ObjectId(user.id) }
+          { "assignedTo.userId": new mongoose.Types.ObjectId(user.id) },
+          { "assignedBy.userId": new mongoose.Types.ObjectId(user.id) }
         );
       }
 
@@ -95,6 +95,7 @@ const getTasks = async (request: NextRequest) => {
     // Calculate pagination
     const skip = (page - 1) * limit;
 
+    console.log(query)
     // Get tasks with pagination
     const tasks = await Task.find(query)
       .sort({ createdAt: -1 })
@@ -123,6 +124,7 @@ const getTasks = async (request: NextRequest) => {
       status: 200,
     });
   } catch (error: any) {
+    console.log(error)
     return returnError({
       message: error.message || "Could not retrieve tasks",
       error,
@@ -262,6 +264,7 @@ const createTask = async (request: NextRequest) => {
       status: 201,
     });
   } catch (error: any) {
+    console.log(error.message)
     return returnError({
       message: error.message || "Could not create task",
       error,

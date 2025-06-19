@@ -1,29 +1,7 @@
 // ===========================================
 // FILE: src/lib/types.ts
 // ===========================================
-export interface Partner {
-  _id: string;
-  companyName: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  website?: string;
-  industry: 'retail' | 'healthcare' | 'ecommerce' | 'logistics' | 'food' | 'other';
-  businessType: 'b2b' | 'b2c' | 'both';
-  location: string;
-  monthlyOrders?: '0-100' | '100-500' | '500-1000' | '1000-5000' | '5000+';
-  averageOrderValue?: '0-1000' | '1000-5000' | '5000-10000' | '10000+';
-  currentDeliveryMethod?: string;
-  partnershipGoals?: string;
-  additionalInfo?: string;
-  status: 'pending' | 'reviewing' | 'approved' | 'rejected';
-  submittedAt: Date;
-  reviewedAt?: Date;
-  reviewedBy?: string;
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+
 
 export interface Subscriber {
   _id: string;
