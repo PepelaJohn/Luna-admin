@@ -4,9 +4,10 @@ import Partner from '@/models/Partner';
 import { ApiResponse } from '@/types/partners';
 import { connectDB } from '@/lib/db';
 import { returnError, returnSuccess } from '@/lib/response';
+import { withAuth } from '@/lib/api-middleware';
 
 // GET /api/partners/stats - Get partner statistics
-export async function GET(): Promise<NextResponse> {
+async function getStats(request:NextRequest) {
   try {
     await connectDB();
 
@@ -63,6 +64,8 @@ export async function GET(): Promise<NextResponse> {
    
   }
 }
+
+export const GET = withAuth(getStats, {roles:["admin", "super_admin"]})
 
 
 

@@ -116,6 +116,80 @@ export class Logger {
       status: 'success'
     });
   }
+  static async logPartnerCreation(
+  partnerId: string,
+  performedBy: string,
+  partnerData: any,
+  ip: string,
+  userAgent?: string
+): Promise<void> {
+  await this.log({
+    action: 'create',
+    entity: 'Partner',
+    entityId: partnerId,
+    performedBy,
+    metadata: {
+      new: partnerData
+    },
+    ip,
+    userAgent,
+    severity: 'medium',
+    status: 'success'
+  });
+}
+
+static async logPartnerUpdate(
+  partnerId: string,
+  performedBy: string,
+  oldData: any,
+  newData: any,
+  ip: string,
+  userAgent?: string,
+  reason?: string
+): Promise<void> {
+  const changes = this.getChangedFields(oldData, newData);
+  
+  await this.log({
+    action: 'update',
+    entity: 'Partner',
+    entityId: partnerId,
+    performedBy,
+    metadata: {
+      old: oldData,
+      new: newData,
+      changes,
+      reason
+    },
+    ip,
+    userAgent,
+    severity: this.determineSeverity('update', 'Partner', changes),
+    status: 'success'
+  });
+}
+
+static async logPartnerDeletion(
+  partnerId: string,
+  performedBy: string,
+  partnerData: any,
+  ip: string,
+  userAgent?: string,
+  reason?: string
+): Promise<void> {
+  await this.log({
+    action: 'delete',
+    entity: 'Partner',
+    entityId: partnerId,
+    performedBy,
+    metadata: {
+      old: partnerData,
+      reason
+    },
+    ip,
+    userAgent,
+    severity: 'high', // Partners might be less critical than users
+    status: 'success'
+  });
+}
 
   private static getChangedFields(oldData: any, newData: any): string[] {
     const changes: string[] = [];
@@ -131,18 +205,31 @@ export class Logger {
   }
 
   private static determineSeverity(action: string, entity: string, changes?: string[]): 'low' | 'medium' | 'high' | 'critical' {
-    if (action === 'delete') return 'critical';
-    if (action === 'create') return 'medium';
+  if (action === 'delete') {
+    return entity === 'User' ? 'critical' : 'high'; // Users are more critical than partners
+  }
+  if (action === 'create') return 'medium';
+  
+  if (action === 'update' && changes) {
+    // User-specific critical fields
+    const userCriticalFields = ['role', 'permissions', 'status', 'isActive'];
+    const userSensitiveFields = ['email', 'password', 'phone'];
     
-    if (action === 'update' && changes) {
-      const criticalFields = ['role', 'permissions', 'status', 'isActive'];
-      const sensitiveFields = ['email', 'password', 'phone'];
-      
-      if (changes.some(field => criticalFields.includes(field))) return 'critical';
-      if (changes.some(field => sensitiveFields.includes(field))) return 'high';
-      if (changes.length > 5) return 'medium';
+    // Partner-specific critical fields (adjust based on your Partner model)
+    const partnerCriticalFields = ['status', 'isActive', 'contractStatus', 'tierLevel'];
+    const partnerSensitiveFields = ['email', 'contactInfo', 'businessDetails', 'paymentInfo'];
+    
+    if (entity === 'User') {
+      if (changes.some(field => userCriticalFields.includes(field))) return 'critical';
+      if (changes.some(field => userSensitiveFields.includes(field))) return 'high';
+    } else if (entity === 'Partner') {
+      if (changes.some(field => partnerCriticalFields.includes(field))) return 'high';
+      if (changes.some(field => partnerSensitiveFields.includes(field))) return 'medium';
     }
     
-    return 'low';
+    if (changes.length > 5) return 'medium';
   }
+  
+  return 'low';
+}
 }

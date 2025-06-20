@@ -4,11 +4,12 @@ import Partner from "@/models/Partner";
 import { UpdatePartnerRequest, ApiResponse } from "@/types/partners";
 import mongoose from "mongoose";
 import { connectDB } from "@/lib/db";
-import { AppAssert } from "@/utils/appAssert";
 import { returnError } from "@/lib/response";
+import { withAuth } from "@/lib/api-middleware";
+import { Logger } from "@/lib/logger";
 
 // GET /api/partners/[id] - Get a specific partner
-export async function GET(request: NextRequest) {
+async function getPartner(request: NextRequest) {
   const id = request.url.split("/").pop();
   if (!id) return returnError({ message: "Invalid request", status: 400 });
   const params = { id };
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
 }
 
 // PUT /api/partners/[id] - Update a specific partner
-export async function PUT(request: NextRequest) {
+async function updatePartner(request: NextRequest) {
   try {
     const id = request.url.split("/").pop();
     if (!id) return returnError({ message: "Invalid request", status: 400 });
@@ -70,6 +71,18 @@ export async function PUT(request: NextRequest) {
           error: "Invalid partner ID",
         },
         { status: 400 }
+      );
+    }
+
+    // Get the original partner data for logging
+    const originalPartner = await Partner.findById(params.id);
+    if (!originalPartner) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Partner not found",
+        },
+        { status: 404 }
       );
     }
 
@@ -90,6 +103,20 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Log the update
+    const performedBy = (request as any).user?.id || "unknown"; // Assuming user info is available from auth middleware
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const userAgent = request.headers.get('user-agent') || undefined;
+
+    await Logger.logPartnerUpdate(
+      params.id,
+      performedBy,
+      originalPartner.toObject(),
+      partner.toObject(),
+      ip,
+      userAgent
+    );
+
     const response: ApiResponse = {
       success: true,
       data: partner,
@@ -99,6 +126,30 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error: any) {
     console.error("Error updating partner:", error);
+
+    // Log the failed update
+    try {
+      const performedBy = (request as any).user?.id || "unknown";
+      const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+      const userAgent = request.headers.get('user-agent') || undefined;
+      const id = request.url.split("/").pop();
+
+      await Logger.log({
+        action: 'update',
+        entity: 'Partner',
+        entityId: id || 'unknown',
+        performedBy,
+        metadata: {
+          error: error.message
+        },
+        ip,
+        userAgent,
+        severity: 'medium',
+        status: 'failed'
+      });
+    } catch (logError) {
+      console.error("Failed to log error:", logError);
+    }
 
     if (error.name === "ValidationError") {
       return NextResponse.json(
@@ -121,7 +172,7 @@ export async function PUT(request: NextRequest) {
 }
 
 // DELETE /api/partners/[id] - Delete a specific partner
-export async function DELETE(request: NextRequest) {
+async function deletePartner(request: NextRequest) {
   const id = request.url.split("/").pop();
   if (!id) return returnError({ message: "Invalid request", status: 400 });
   const params = { id };
@@ -150,6 +201,19 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // Log the deletion
+    const performedBy = (request as any).user?.id || "unknown";
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const userAgent = request.headers.get('user-agent') || undefined;
+
+    await Logger.logPartnerDeletion(
+      params.id,
+      performedBy,
+      partner.toObject(),
+      ip,
+      userAgent
+    );
+
     const response: ApiResponse = {
       success: true,
       message: "Partner deleted successfully",
@@ -158,6 +222,30 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error deleting partner:", error);
+
+    // Log the failed deletion
+    try {
+      const performedBy = (request as any).user?.id || "unknown";
+      const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+      const userAgent = request.headers.get('user-agent') || undefined;
+
+      await Logger.log({
+        action: 'delete',
+        entity: 'Partner',
+        entityId: params.id,
+        performedBy,
+        metadata: {
+          error: (error as Error).message
+        },
+        ip,
+        userAgent,
+        severity: 'high',
+        status: 'failed'
+      });
+    } catch (logError) {
+      console.error("Failed to log error:", logError);
+    }
+
     return NextResponse.json(
       {
         success: false,
@@ -167,3 +255,7 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
+
+export const GET = withAuth(getPartner, {roles:["admin", "super_admin"]})
+export const PUT = withAuth(updatePartner, {roles:["admin", "super_admin"]})
+export const DELETE = withAuth(deletePartner, {roles:["admin", "super_admin"]})

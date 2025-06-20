@@ -1,32 +1,60 @@
+// app/dashboard/logs/page.tsx
 "use client";
+import React, { useCallback } from "react";
 import LogsTable from "@/components/admin/LogsTable";
-import UsersTable from "@/components/admin/UserTable";
-import { useData } from "@/hooks/useData";
 import { useLogs } from "@/hooks/useLogs";
-import React from "react";
 
-const Subs = () => {
-  const {  pagination, } = useData();
-  const { logs, loading } = useLogs();
+interface FilterParams {
+  searchTerm?: string;
+  filterSeverity?: string;
+  filterAction?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+const LogsPage = () => {
+  const { 
+    logs, 
+    loading, 
+    pagination, 
+    error,
+    refetch,
+    updateFilters,
+    changePage,
+    changePageSize
+  } = useLogs();
 
   const stats = {
-   
-   
-    totalLogs: logs?.length || 0,
-    criticalLogs:
-      logs?.filter((log) => log.severity === "critical").length || 0,
-    recentLogs:
-      logs?.filter((log) => {
-        const logDate = new Date(log.createdAt);
-        const today = new Date();
-        const daysDiff =
-          (today.getTime() - logDate.getTime()) / (1000 * 3600 * 24);
-        return daysDiff <= 7;
-      }).length || 0,
+    totalLogs: pagination?.total || 0,
+    criticalLogs: logs?.filter((log) => log.severity === "critical").length || 0,
+    recentLogs: logs?.filter((log) => {
+      const logDate = new Date(log.createdAt);
+      const today = new Date();
+      const daysDiff = (today.getTime() - logDate.getTime()) / (1000 * 3600 * 24);
+      return daysDiff <= 7;
+    }).length || 0,
   };
+
+  const handleFiltersChange = useCallback((filters: FilterParams) => {
+    updateFilters(filters);
+  }, [updateFilters]);
+
+  const handlePageChange = useCallback((page: number) => {
+    changePage(page);
+  }, [changePage]);
+
+  const handlePageSizeChange = useCallback((limit: number) => {
+    changePageSize(limit);
+  }, [changePageSize]);
+
+  const handleRetry = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <div className="p-4 lg:p-6 border-b border-gray-200">
+    <div className="min-h-screen bg-gray-50 p-4 lg:p-6">
+      <div className="max-w-7xl mx-auto">
+         <div className="p-4 lg:p-6 bg-white rounded-xl shadow-sm mb-5  border-gray-200">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold">Activity Logs</h3>
@@ -50,27 +78,23 @@ const Subs = () => {
           </div>
         </div>
       </div>
-     {loading ?<Loading></Loading> : <LogsTable
-        logs={logs || []}
-        pagination={pagination}
-        onPageChange={(page: number) => {
-          // Implement logs pagination if needed
-          // getLogs(page);
-        }}
-      />}
+
+        {/* Main Logs Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <LogsTable
+            logs={logs || []}
+            pagination={pagination}
+            loading={loading}
+            error={error}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            onFiltersChange={handleFiltersChange}
+            onRetry={handleRetry}
+          />
+        </div>
+      </div>
     </div>
   );
 };
 
-export default Subs;
-
-function Loading() {
-  return (
-    <div className=" py-18 bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading ...</p>
-      </div>
-    </div>
-  );
-}
+export default LogsPage;

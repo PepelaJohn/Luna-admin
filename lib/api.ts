@@ -11,7 +11,7 @@ import {
   IStatsResponse,
   PartnersApiResponse,
 } from "@/types/api";
-
+import {Pagination as IPagination} from '@/components/admin/LogsTable'
 // Default axios instance for regular API calls
 export const API: AxiosInstance = axios.create({
   baseURL: "/api",
@@ -267,11 +267,41 @@ export const usersApi = {
 interface ILogResponse {
   logs: LogResponse[];
   success: boolean;
+  pagination:IPagination
+}
+
+interface GetLogsParams {
+  page?: number;
+  limit?: number;
+  action?: string;
+  entity?: string;
+  performedBy?: string;
+  severity?: 'low' | 'medium' | 'high' | 'critical';
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export const logsApi = {
-  getLogs: async (): Promise<ILogResponse> => {
-    const response = await API.get("/logs");
+  getLogs: async (params: GetLogsParams = {}): Promise<ILogResponse> => {
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    
+    // Add pagination parameters
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    
+    // Add filter parameters
+    if (params.action) queryParams.append('action', params.action);
+    if (params.entity) queryParams.append('entity', params.entity);
+    if (params.performedBy) queryParams.append('performedBy', params.performedBy);
+    if (params.severity) queryParams.append('severity', params.severity);
+    if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+    if (params.dateTo) queryParams.append('dateTo', params.dateTo);
+
+    const queryString = queryParams.toString();
+    const url = queryString ? `/logs?${queryString}` : '/logs';
+    
+    const response = await API.get(url);
 
     if ((response as any)?.data?.success) {
       return response.data;

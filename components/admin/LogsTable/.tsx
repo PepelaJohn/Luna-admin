@@ -55,7 +55,7 @@
 
     interface LogsTableProps {
     logs: LogResponse[];
-    pagination?: Pagination;
+    pagination: Pagination;
     loading?: boolean;
     error?: string | null;
     isCompact?: boolean;
@@ -298,7 +298,7 @@
 
                 {/* Page Size */}
                 <select
-                value={pagination?.limit}
+                value={pagination.limit}
                 onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
@@ -322,7 +322,14 @@
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="From date"
                 />
-                
+                <span className="text-gray-500">to</span>
+                <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="To date"
+                />
                 </div>
 
                 {(searchTerm || filterSeverity !== 'all' || filterAction !== 'all' || dateFrom || dateTo) && (
@@ -347,7 +354,7 @@
 
         {/* Table */}
         {!loading && (
-            <div className={`overflow-auto ${isCompact ? "":"pb-18"}`}>
+            <div className="overflow-auto pb-18">
             <table className="w-full">
                 <thead className="bg-gray-50">
                 <tr>
@@ -358,22 +365,13 @@
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Performed By
                     </th>
-
-
                     )}
-
-                   {  !isCompact && 
-                   
-                   <>
-                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Severity
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date
                     </th>
-                   </>
-                   }
-                   
                     {!isCompact && (
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
@@ -405,9 +403,8 @@
                                 {log.action} {log.entity}
                                 </div>
                                 {isCompact && (
-                                <div className="text-xs text-gray-500">
-                                  <p>by {log.performedBy.name}</p>
-                                  <p>on {formatDate(log.createdAt)}</p>
+                                <div className="text-sm text-gray-500">
+                                    by {log.performedBy.name}
                                 </div>
                                 )}
                             </div>
@@ -416,8 +413,6 @@
                         </td>
                         
                         {!isCompact && (
-                       <>
-                       
                         <td className="px-4 py-4">
                             <div className="flex items-center gap-2">
                             <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
@@ -438,6 +433,8 @@
                             </div>
                             </div>
                         </td>
+                        )}
+                        
                         <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
                             {getSeverityIcon(log.severity)}
@@ -450,10 +447,6 @@
                         <td className="px-4 py-4 text-sm text-gray-500">
                         {formatDate(log.createdAt)}
                         </td>
-                       </>
-                        )}
-                        
-                        
                         
                         {!isCompact && (
                         <td className="px-4 py-4">
@@ -524,39 +517,39 @@
             <div className="flex items-center justify-between">
                 <div className="flex items-center text-sm text-gray-700">
                 <span>
-                    Showing {((pagination!.page - 1) * pagination!.limit) + 1} to{' '}
-                    {Math.min(pagination!.page * pagination!.limit, pagination!.total)} of{' '}
-                    {pagination!.total} entries
+                    Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+                    {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                    {pagination.total} entries
                 </span>
                 </div>
                 <div className="flex items-center gap-2">
                 <button
                     onClick={() => handlePageChange(1)}
-                    disabled={pagination!.page <= 1}
+                    disabled={pagination.page <= 1}
                     className="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     First
                 </button>
                 <button
-                    onClick={() => handlePageChange(pagination!.page - 1)}
-                    disabled={pagination!.page <= 1}
+                    onClick={() => handlePageChange(pagination.page - 1)}
+                    disabled={pagination.page <= 1}
                     className="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Previous
                 </button>
                 <span className="px-3 py-1 text-sm">
-                    Page {pagination!.page} of {pagination!.pages}
+                    Page {pagination.page} of {pagination.pages}
                 </span>
                 <button
-                    onClick={() => handlePageChange(pagination!.page + 1)}
-                    disabled={pagination!.page >= pagination!.pages}
+                    onClick={() => handlePageChange(pagination.page + 1)}
+                    disabled={pagination.page >= pagination.pages}
                     className="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Next
                 </button>
                 <button
-                    onClick={() => handlePageChange(pagination!.pages)}
-                    disabled={pagination!.page >= pagination!.pages}
+                    onClick={() => handlePageChange(pagination.pages)}
+                    disabled={pagination.page >= pagination.pages}
                     className="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Last

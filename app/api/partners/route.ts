@@ -3,9 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import Partner from '@/models/Partner';
 import { CreatePartnerRequest, PartnerFilters, ApiResponse } from '@/types/partners';
 import { connectDB } from '@/lib/db';
+import { withAuth } from '@/lib/api-middleware';
+import { Logger } from '@/lib/logger';
 
 // GET /api/partners - Get all partners with optional filtering
-export async function GET(request: NextRequest) {
+async function getPartnersHandler(request:NextRequest){
   try {
     await connectDB();
 
@@ -63,8 +65,8 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/partners - Create a new partner
-export async function POST(request: NextRequest) {
-  try {
+async function createPartnersHandler(request:NextRequest) {
+   try {
     await connectDB();
 
     const body: CreatePartnerRequest = await request.json();
@@ -94,17 +96,30 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       );
     }
+    const performedBy = (request as any).user?.id || "unknown";
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const userAgent = request.headers.get('user-agent') || undefined;
 
     const partner = new Partner(body);
     await partner.save();
+    await Logger.logPartnerCreation(
+      partner._id.toString(),
+      performedBy,
+      partner.toObject(),
+      ip,
+      userAgent
+    );
 
     const response: ApiResponse = {
       success: true,
       data: partner,
-      message: 'Partner created successfully',
+      message: "Partner created successfully",
     };
 
     return NextResponse.json(response, { status: 201 });
+    
+
+   
   } catch (error:any) {
     console.error('Error creating partner:', error);
     
@@ -128,4 +143,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
+
+
+
+
+export const GET = withAuth(getPartnersHandler, {roles:['admin', 'super_admin']})
+export const POST = withAuth(createPartnersHandler, {roles:['admin', 'super_admin']})
 

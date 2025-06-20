@@ -79,9 +79,9 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ isCompact = false }) => {
     try {
       const response: PartnersApiResponse = await partnersApi.getPartners(filterParams);
       
-      if (response.success) {
-        setPartners(response.data.partners);
-        setPagination(response.data.pagination);
+      if (response?.success) {
+        setPartners(response?.data?.partners);
+        setPagination(response?.data?.pagination);
       }
     } catch (error) {
       console.error('Error fetching partners:', error);

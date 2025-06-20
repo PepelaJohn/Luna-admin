@@ -418,15 +418,13 @@ const UsersTable: React.FC<UsersTableProps> = ({
                   </span>
                 )}
               </div>
-              <div>
+              <div className="flex justify-center  flex-col">
                 <p className="font-medium text-gray-900 text-sm">{user.name}</p>
                 <p className="text-xs text-gray-500">{user.email}</p>
+                <p className="text-[10px] capitalize text-gray-500">{user.role}</p>
               </div>
             </div>
-            <div className="flex items-center text-black gap-2">
-              {getRoleBadge(user.role)}
-              {getVerificationStatus(user.isEmailVerified)}
-            </div>
+            
           </div>
         ))}
         {filteredUsers.length > 5 && (
