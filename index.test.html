@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registration Rate Limit Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        #results { max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>Registration Rate Limit Tester</h1>
+    
+    <div>
+        <button onclick="testSingleRegistration()">Test Single Registration</button>
+        <button onclick="testRapidRegistrations()">Test Rapid Registrations (4x)</button>
+        <button onclick="testDuplicateEmail()">Test Duplicate Email</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        let requestCounter = 1;
+        
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        async function testSingleRegistration() {
+            const email = `test${Date.now()}@example.com`;
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: `Test User ${requestCounter++}`,
+                        email: email,
+                        password: 'password123'
+                    })
+                });
+                
+                const data = await response.json();
+                const remaining = response.headers.get('x-ratelimit-remaining');
+                const reset = response.headers.get('x-ratelimit-reset');
+                
+                if (response.ok) {
+                    addResult(`✅ Registration successful! Remaining: ${remaining}, Reset: ${new Date(parseInt(reset)).toLocaleTimeString()}`, 'success');
+                } else {
+                    addResult(`❌ Registration failed (${response.status}): ${data.message}`, 'error');
+                }
+                
+            } catch (error) {
+                addResult(`💥 Network error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testRapidRegistrations() {
+            addResult('🚀 Starting rapid registration test (4 requests)...', 'info');
+            
+            for (let i = 1; i <= 4; i++) {
+                const email = `rapid${Date.now()}_${i}@example.com`;
+                
+                try {
+                    const response = await fetch('http://localhost:3000/api/auth/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            name: `Rapid User ${i}`,
+                            email: email,
+                            password: 'password123'
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    const remaining = response.headers.get('x-ratelimit-remaining');
+                    const retryAfter = response.headers.get('retry-after');
+                    
+                    if (response.ok) {
+                        addResult(`✅ Request ${i}: Success! Remaining: ${remaining}`, 'success');
+                    } else if (response.status === 429) {
+                        addResult(`⏰ Request ${i}: Rate limited! Retry after: ${retryAfter}s`, 'error');
+                    } else {
+                        addResult(`❌ Request ${i}: Failed (${response.status}): ${data.message}`, 'error');
+                    }
+                    
+                } catch (error) {
+                    addResult(`💥 Request ${i}: Network error: ${error.message}`, 'error');
+                }
+                
+                // Small delay between requests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+        
+        async function testDuplicateEmail() {
+            const email = 'duplicate-test@example.com';
+            
+            addResult('📧 Testing duplicate email registration...', 'info');
+            
+            // First registration
+            try {
+                const response1 = await fetch('http://localhost:3000/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: 'First User',
+                        email: email,
+                        password: 'password123'
+                    })
+                });
+                
+                const data1 = await response1.json();
+                
+                if (response1.ok) {
+                    addResult('✅ First registration with email successful', 'success');
+                } else {
+                    addResult(`❌ First registration failed: ${data1.message}`, 'error');
+                    return;
+                }
+                
+            } catch (error) {
+                addResult(`💥 First registration error: ${error.message}`, 'error');
+                return;
+            }
+            
+            // Wait a moment
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Second registration with same email
+            try {
+                const response2 = await fetch('http://localhost:3000/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: 'Second User',
+                        email: email,
+                        password: 'password456'
+                    })
+                });
+                
+                const data2 = await response2.json();
+                
+                if (response2.status === 400) {
+                    addResult('✅ Duplicate email correctly rejected!', 'success');
+                } else {
+                    addResult(`❌ Unexpected response for duplicate email (${response2.status}): ${data2.message}`, 'error');
+                }
+                
+            } catch (error) {
+                addResult(`💥 Second registration error: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // Add initial message
+        addResult('🔧 Rate limit tester ready. Click buttons to test different scenarios.', 'info');
+    </script>
+</body>
+</html>

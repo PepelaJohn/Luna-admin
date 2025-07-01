@@ -8,6 +8,7 @@ import { EmailVerificationTemplate, NotifyTaskAssigned } from '@/components/Emai
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendVerificationEmail(email: string, code: string) {
+  console.log(code)
   try {
     await resend.emails.send({
       from: process.env.FROM_EMAIL || 'no-reply@lunadrone.com',

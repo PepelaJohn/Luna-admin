@@ -26,22 +26,75 @@ const REDIRECT_ROUTES = {
   unauthorized: "/unauthorized",
 } as const;
 
+// CORS configuration
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5500',
+  'http://127.0.0.1:5500',
+  'http://localhost:8080',
+  'http://127.0.0.1:8080',
+  // Add your production domains here
+];
 
-const handleCors = ()=>{
+const handleCors = (request: NextRequest, response: NextResponse) => {
+  const origin = request.headers.get('origin');
   
-}
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    response.headers.set('Access-Control-Allow-Origin', origin);
+  }
+  
+  response.headers.set('Access-Control-Allow-Credentials', 'true');
+  response.headers.set('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT,OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Date, X-Api-Version');
+  
+  return response;
+};
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  
+  // Handle CORS for API routes
+  if (pathname.startsWith('/api/')) {
+    const origin = request.headers.get('origin');
+    
+    // Handle preflight requests
+    if (request.method === 'OPTIONS') {
+      const response = new NextResponse(null, { status: 200 });
+      
+      if (origin && ALLOWED_ORIGINS.includes(origin)) {
+        response.headers.set('Access-Control-Allow-Origin', origin);
+      }
+      
+      response.headers.set('Access-Control-Allow-Credentials', 'true');
+      response.headers.set('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT,OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+      response.headers.set('Access-Control-Max-Age', '86400');
+      
+      return response;
+    }
+    
+    // Handle actual API requests
+    const response = NextResponse.next();
+    
+    if (origin && ALLOWED_ORIGINS.includes(origin)) {
+      response.headers.set('Access-Control-Allow-Origin', origin);
+    }
+    
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    response.headers.set('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT,OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
+    return response;
+  }
+  
+  // Authentication logic for protected routes
   const token = request.cookies.get("auth-token")?.value || "";
-  
-  
   
   // Early return if no token
   console.log(pathname);
   if (!token) {
     console.log("[Middleware] No auth token found, redirecting to login");
-
     return createRedirectResponse(request, REDIRECT_ROUTES.login);
   }
 
@@ -70,7 +123,11 @@ export async function middleware(request: NextRequest) {
     }
 
     // Add user context to headers for downstream use
-    const response = NextResponse.next();
+    let response = NextResponse.next();
+    
+    // Apply CORS headers if needed
+    response = handleCors(request, response);
+    
     response.headers.set("x-user-id", authResult.user?.id || "");
     response.headers.set("x-user-role", authResult.user?.role || "");
 
@@ -181,9 +238,8 @@ export const config = {
     "/profile",
     // Add other protected routes as needed
   ],
-  // Exclude static files and API routes from middleware
+  // Exclude static files from middleware
   unstable_allowDynamic: [
-    "/api/**",
     "/_next/**",
     "/favicon.ico",
     "/robots.txt",

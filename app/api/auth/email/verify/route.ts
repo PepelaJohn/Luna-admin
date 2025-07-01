@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json();
     const { email, code } = verifySchema.parse(body);
-
+    console.log(code, email)
     // Find user
     const user = await User.findOne({ email });
     if (!user) {

@@ -22,7 +22,7 @@ const page = () => {
   const [loading, setLoading] = useState(false);
 
   const [message, setMessage] = useState<Message | null>(null);
-  const verificationEmail = "pepelajohn@gmail.com";
+  const verificationEmail = "pepelajahy@gmail.com";
 
   const [verificationCode, setVerificationCode] = useState("");
   const handleVerification = async () => {
@@ -45,7 +45,7 @@ const page = () => {
       });
 
       const data: ApiResponse = await response.json();
-
+      console.log(data);
       if (data.success) {
         setMessage({
           type: "success",
@@ -60,7 +60,7 @@ const page = () => {
     } catch (error) {
       setMessage({ type: "error", text: "Network error. Please try again." });
     } finally {
-      setLoading(true);
+      setLoading(false);
     }
   };
 

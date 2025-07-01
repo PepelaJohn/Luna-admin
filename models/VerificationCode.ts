@@ -12,6 +12,7 @@ export interface verificationCodeDocument extends Document {
   createdAt: Date;
   updatedAt: Date;
   expiresAt: Date;
+   code?:string;
 }
 
 const verificationCodeSchema = new mongoose.Schema<verificationCodeDocument>(
@@ -21,6 +22,9 @@ const verificationCodeSchema = new mongoose.Schema<verificationCodeDocument>(
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       index: true,
+    },
+    code:{
+      type:String
     },
     type: {
       type: String,
