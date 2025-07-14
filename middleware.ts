@@ -174,8 +174,7 @@ function createRedirectResponse(request: NextRequest, redirectPath: string) {
 
 // Enhanced matcher configuration
 export const config = {
-  matcher: [
-    "/api/:path*",     
+  matcher: [   
     "/admin/:path*",
     "/dashboard/:path*",
     "/profile",
