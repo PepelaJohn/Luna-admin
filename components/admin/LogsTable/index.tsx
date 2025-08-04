@@ -222,7 +222,7 @@
         
         const searchLower = debouncedSearchTerm.toLowerCase();
         return (
-        log.performedBy.name.toLowerCase().includes(searchLower) ||
+        log.performedBy?.name.toLowerCase().includes(searchLower) ||
         log.performedBy.email.toLowerCase().includes(searchLower) ||
         log.action.toLowerCase().includes(searchLower) ||
         log.entity.toLowerCase().includes(searchLower)
@@ -406,7 +406,7 @@
                                 </div>
                                 {isCompact && (
                                 <div className="text-xs text-gray-500">
-                                  <p>by {log.performedBy.name}</p>
+                                  <p>by {log.performedBy?.name}</p>
                                   <p>on {formatDate(log.createdAt)}</p>
                                 </div>
                                 )}
@@ -421,11 +421,11 @@
                         <td className="px-4 py-4">
                             <div className="flex items-center gap-2">
                             <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                                {log.performedBy.name.charAt(0).toUpperCase()}
+                                {log.performedBy?.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
                                 <div className="font-medium text-gray-900">
-                                {log.performedBy.name}
+                                {log.performedBy?.name}
                                 </div>
                                 <div className="flex items-center gap-2">
                                 <span className="text-sm text-gray-500">
@@ -630,10 +630,10 @@
                     <div className="mt-2 p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-2">
                         <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-medium">
-                        {selectedLog.performedBy.name.charAt(0).toUpperCase()}
+                        {selectedLog.performedBy?.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                        <p className="font-medium">{selectedLog.performedBy.name}</p>
+                        <p className="font-medium">{selectedLog.performedBy?.name}</p>
                         <p className="text-sm text-gray-600">{selectedLog.performedBy.email}</p>
                         <span className={`px-2 py-1 text-xs rounded-full ${getRoleColor(selectedLog.performedBy.role)}`}>
                             {selectedLog.performedBy.role}

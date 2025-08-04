@@ -11,10 +11,9 @@ import {
   UNAUTHORIZED,
 } from "@/constants/http";
 import mongoose from "mongoose";
-import { NOtifyAdminuser } from "@/lib/email";
+import { NOtifyAdminuser, notifyMultipleUsers } from "@/lib/email";
 
 // GET /api/tasks - Get all tasks for the user
-
 const getTasks = async (request: NextRequest) => {
   try {
     await connectDB();
@@ -95,7 +94,7 @@ const getTasks = async (request: NextRequest) => {
     // Calculate pagination
     const skip = (page - 1) * limit;
 
-    console.log(query)
+    console.log(query);
     // Get tasks with pagination
     const tasks = await Task.find(query)
       .sort({ createdAt: -1 })
@@ -111,20 +110,20 @@ const getTasks = async (request: NextRequest) => {
       message: "Tasks retrieved successfully",
       data: {
         data: {
-        tasks,
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalTasks,
-          hasNextPage: page < totalPages,
-          hasPrevPage: page > 1,
+          tasks,
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalTasks,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+          },
         },
-      }
       },
       status: 200,
     });
   } catch (error: any) {
-    console.log(error)
+    console.log(error);
     return returnError({
       message: error.message || "Could not retrieve tasks",
       error,
@@ -133,7 +132,7 @@ const getTasks = async (request: NextRequest) => {
   }
 };
 
-// POST /api/tasks - Create a new task
+// POST /api/tasks - Create a new task (maintains backward compatibility)
 const createTask = async (request: NextRequest) => {
   try {
     await connectDB();
@@ -150,20 +149,13 @@ const createTask = async (request: NextRequest) => {
     const {
       title,
       description,
-
       priority = "medium",
       dueDate,
       assignedTo,
+      assignedToUserId, // For backward compatibility
       category,
       attachments = [],
     } = body;
-
-    const {
-      _id: assignedToUserId,
-      name: assignedToName,
-      email: assignedToEmail,
-      role: assignedToRole,
-    } = assignedTo;
 
     // Validation
     if (!title || title.trim().length === 0) {
@@ -180,12 +172,7 @@ const createTask = async (request: NextRequest) => {
       });
     }
 
-    if (
-      !assignedToUserId ||
-      !assignedToName ||
-      !assignedToEmail ||
-      !assignedToRole
-    ) {
+    if (!assignedTo && !assignedToUserId) {
       return returnError({
         message: "Assigned user information is required",
         status: BAD_REQUEST,
@@ -195,6 +182,37 @@ const createTask = async (request: NextRequest) => {
     if (!category) {
       return returnError({
         message: "Task category is required",
+        status: BAD_REQUEST,
+      });
+    }
+
+    // Handle both old and new assignment formats
+    let assignedUser;
+    if (assignedTo) {
+      assignedUser = assignedTo;
+    } else if (assignedToUserId) {
+      // For backward compatibility - would need to fetch user data
+      return returnError({
+        message: "Please provide complete assignedTo user object",
+        status: BAD_REQUEST,
+      });
+    }
+
+    const {
+      _id: assignedToUserId_,
+      name: assignedToName,
+      email: assignedToEmail,
+      role: assignedToRole,
+    } = assignedUser;
+
+    if (
+      !assignedToUserId_ ||
+      !assignedToName ||
+      !assignedToEmail ||
+      !assignedToRole
+    ) {
+      return returnError({
+        message: "Complete assigned user information is required",
         status: BAD_REQUEST,
       });
     }
@@ -217,7 +235,7 @@ const createTask = async (request: NextRequest) => {
     }
 
     // Prevent self-assignment
-    if (assignedToUserId === user.id) {
+    if (assignedToUserId_ === user.id) {
       return returnError({
         message: "Cannot assign task to yourself",
         status: BAD_REQUEST,
@@ -235,7 +253,7 @@ const createTask = async (request: NextRequest) => {
         role: user.role,
       },
       assignedTo: {
-        userId: assignedToUserId,
+        userId: assignedToUserId_,
         name: assignedToName,
         email: assignedToEmail,
         role: assignedToRole,
@@ -247,24 +265,28 @@ const createTask = async (request: NextRequest) => {
     });
 
     await task.save();
-     await NOtifyAdminuser({description, email:assignedToEmail, name:user.name, title, username:assignedToName})
-    // TODO: Create notification for assigned user
-    // await createNotification({
-    //   type: 'task_assigned',
-    //   to: assignedToUserId,
-    //   from: user.id,
-    //   relatedTask: task._id,
-    //   message: `New task assigned: ${task.title}`,
-    //   actionRequired: true
-    // });
+
+    // Send email notification
+    try {
+      await NOtifyAdminuser({
+        description,
+        email: assignedToEmail,
+        name: user.name,
+        title,
+        username: assignedToName
+      });
+    } catch (emailError) {
+      console.error("Failed to send email notification:", emailError);
+      // Don't fail the task creation if email fails
+    }
 
     return returnSuccess({
       message: "Task created successfully",
-      data: task,
+      data: { task },
       status: 201,
     });
   } catch (error: any) {
-    console.log(error.message)
+    console.log(error.message);
     return returnError({
       message: error.message || "Could not create task",
       error,

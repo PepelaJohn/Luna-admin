@@ -89,7 +89,40 @@ export async function NOtifyAdminuser({email, name:sender, username, title, desc
   if (error)  return;
   return data;
 }
+export async function notifyMultipleUsers(notifications: Array<{
+  email: string;
+  username: string; 
+  title: string;
+  description: string;
+  sender: string;
+}>) {
+  if (!notifications || notifications.length === 0) {
+    return { successful: 0, failed: 0 };
+  }
 
+  let successful = 0;
+  let failed = 0;
+
+  for (const notification of notifications) {
+    try {
+      await NOtifyAdminuser({
+        email: notification.email,
+        username: notification.username,
+        name: notification.sender,
+        title: notification.title,
+        description: notification.description
+      });
+      successful++;
+    } catch (error) {
+      console.error(`Failed to send email to ${notification.email}:`, error);
+      failed++;
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 200));
+  }
+
+  return { successful, failed };
+}
 
 
 

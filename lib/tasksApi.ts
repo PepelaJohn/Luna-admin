@@ -224,6 +224,49 @@ class TasksAPI {
     });
   }
 
+  // Add this method to your existing TasksAPI class
+async createMultipleTasks(taskData: Omit<ICreateTaskData, 'assignedTo' | 'assignedToUserId'>, assignedUsers: IAssignableUser[]): Promise<{ 
+  tasks: ITask[];
+  successful: number;
+  failed: number;
+  errors: any[];
+}> {
+  const results = {
+    tasks: [] as ITask[],
+    successful: 0,
+    failed: 0,
+    errors: [] as any[]
+  };
+
+  for (const user of assignedUsers) {
+    try {
+      const singleTaskData: ICreateTaskData = {
+        ...taskData,
+        assignedTo: user,
+        assignedToUserId: user._id
+      };
+
+      const response = await this.createTask(singleTaskData);
+      
+      if (response.task) {
+        results.tasks.push(response.task);
+        results.successful++;
+      } else {
+        results.failed++;
+        results.errors.push({ user: user.name, error: 'No task returned' });
+      }
+    } catch (error) {
+      results.failed++;
+      results.errors.push({
+        user: user.name,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  return results;
+}
+
   // Update task
   async updateTask(taskId: string, taskData: IUpdateTaskData): Promise<{ task: ITask }> {
     return this.request<{ task: ITask }>(`/tasks/${taskId}`, {
@@ -272,11 +315,71 @@ class TasksAPI {
   }
 
   // Get task metadata
-  async getTaskMetadata(): Promise<ITaskMetadata> {
-    return this.request<ITaskMetadata>('/tasks/metadata');
+  async getTaskMetadata(): Promise<ITaskMetadataResponse> {
+    return this.request<ITaskMetadataResponse>('/tasks/metadata');
   }
 }
 
+interface ITaskMetadataResponse {
+  metadata: Metadata;
+  success: boolean;
+}
+
+interface Metadata {
+  categories: Category[];
+  priorities: Priority[];
+  statuses: Priority[];
+  defaultValues: DefaultValues;
+  validation: Validation;
+  permissions: Permissions;
+}
+
+interface Permissions {
+  admin: Admin;
+  super_admin: Admin;
+}
+
+interface Admin {
+  canAssignTo: string[];
+  canViewAll: boolean;
+  canDeleteAny: boolean;
+}
+
+interface Validation {
+  title: Title;
+  description: Title;
+  dueDate: DueDate;
+}
+
+interface DueDate {
+  mustBeFuture: boolean;
+  required: boolean;
+}
+
+interface Title {
+  minLength: number;
+  maxLength: number;
+  required: boolean;
+}
+
+interface DefaultValues {
+  priority: string;
+  status: string;
+  category: string;
+}
+
+interface Priority {
+  value: string;
+  label: string;
+  color: string;
+  description: string;
+}
+
+interface Category {
+  value: string;
+  label: string;
+  description: string;
+}
 // Export singleton instance
 export const tasksApi = new TasksAPI();
 
