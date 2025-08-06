@@ -25,6 +25,7 @@ import {
   ITaskMetadata,
   tasksApi,
 } from "@/lib/tasksApi";
+import RichTextEditor from "@/components/RichTextEditor";
 
 interface FormData {
   title: string;
@@ -108,6 +109,19 @@ export default function CreateTaskPage() {
     loadData();
   }, []);
 
+  // Helper function to strip HTML tags for validation
+  const stripHtmlTags = (html: string): string => {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    return temp.textContent || temp.innerText || '';
+  };
+
+  // Helper function to check if HTML content is empty
+  const isHtmlEmpty = (html: string): boolean => {
+    const stripped = stripHtmlTags(html).trim();
+    return stripped.length === 0 || html.trim() === '<br>' || html.trim() === '<div><br></div>';
+  };
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
@@ -115,8 +129,13 @@ export default function CreateTaskPage() {
       newErrors.title = "Title is required";
     }
 
-    if (!formData.description.trim()) {
+    if (isHtmlEmpty(formData.description)) {
       newErrors.description = "Description is required";
+    } else {
+      const strippedDescription = stripHtmlTags(formData.description);
+      if (strippedDescription.length > 5000) {
+        newErrors.description = "Description is too long (max 5000 characters)";
+      }
     }
 
     if (formData.assignedToUsers.length === 0) {
@@ -149,7 +168,7 @@ export default function CreateTaskPage() {
         // Single user - use existing createTask method
         const submitData: ICreateTaskData = {
           title: formData.title,
-          description: formData.description,
+          description: formData.description, // Now contains rich HTML content
           assignedTo: formData.assignedToUsers[0],
           assignedToUserId: formData.assignedToUsers[0]._id,
           priority: formData.priority,
@@ -172,7 +191,7 @@ export default function CreateTaskPage() {
         // Multiple users - use new createMultipleTasks method
         const taskData = {
           title: formData.title,
-          description: formData.description,
+          description: formData.description, // Now contains rich HTML content
           priority: formData.priority,
           category: formData.category,
           dueDate: formData.dueDate || undefined,
@@ -332,7 +351,7 @@ export default function CreateTaskPage() {
               Create New Task
             </h1>
             <p className="text-gray-600">
-              Fill in the details below to create a new task
+              Fill in the details below to create a new task with rich formatting and images
             </p>
           </motion.div>
         </motion.div>
@@ -375,35 +394,23 @@ export default function CreateTaskPage() {
                 )}
               </motion.div>
 
-              {/* Description */}
+              {/* Rich Text Description */}
               <motion.div variants={itemVariants}>
                 <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
                   <FileText className="w-4 h-4 mr-2" />
                   Description
                 </label>
-                <textarea
+                <RichTextEditor
                   value={formData.description}
-                  onChange={(e) =>
-                    handleInputChange("description", e.target.value)
-                  }
-                  rows={4}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-vertical ${
-                    errors.description
-                      ? "border-red-300 bg-red-50"
-                      : "border-gray-300"
-                  }`}
-                  placeholder="Provide detailed information about the task..."
+                  onChange={(value) => handleInputChange("description", value)}
+                  placeholder="Provide detailed information about the task. Use the toolbar to format text, add images, and create lists..."
+                  error={errors.description}
                 />
-                {errors.description && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-red-600 text-sm mt-1 flex items-center"
-                  >
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    {errors.description}
-                  </motion.p>
-                )}
+                <div className="mt-2 text-xs text-gray-500">
+                  <p>• Rich text formatting: <strong>Bold</strong>, <em>Italic</em>, Lists, etc.</p>
+                  <p>• Images: Drag & drop, paste, or click the image button to upload</p>
+                  <p>• Character count: {stripHtmlTags(formData.description).length}/5000</p>
+                </div>
               </motion.div>
 
               {/* Multi-User Assignment */}
