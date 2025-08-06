@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { getPlainTextPreview } from '@/lib/utils';
 
 // Types
 interface ITask {
@@ -130,7 +131,7 @@ const TaskCard = ({ task }: { task: ITask }) => (
               {task.title}
             </h3>
             <p className="text-gray-600 text-sm mt-1 line-clamp-2">
-              {task.description}
+            {getPlainTextPreview(task.description)}
             </p>
           </div>
           {task.isOverdue && (

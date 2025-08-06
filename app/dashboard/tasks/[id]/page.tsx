@@ -1,5 +1,6 @@
 // app/dashboard/tasks/[id]/page.tsx
 "use client"
+import './module.css'
 import React, { useEffect, useState, useRef } from 'react';
 import { 
   ArrowLeft,
@@ -19,6 +20,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 // Types
 interface IComment {
@@ -223,7 +225,7 @@ const TaskDetailPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [newComment, setNewComment] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const {user:currentUser} = useAuth()
   
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
@@ -253,12 +255,7 @@ const TaskDetailPage = () => {
     }
   };
 
-  // Fetch current user (you might have this in a context or hook)
-  useEffect(() => {
-    // This is a placeholder - replace with your actual user fetching logic
-    // You might have this in a context or get it from a token
-    setCurrentUser({ id: 'current-user-id', name: 'Current User' });
-  }, []);
+ 
 
   useEffect(() => {
     if (taskId) {
@@ -416,85 +413,7 @@ const TaskDetailPage = () => {
                 />
               </div>
 
-              <style jsx>{`
-                .rich-text-content {
-                  font-family: inherit;
-                  line-height: 1.6;
-                }
-                
-                .rich-text-content h1,
-                .rich-text-content h2,
-                .rich-text-content h3 {
-                  font-weight: 600;
-                  margin: 1.5rem 0 0.75rem 0;
-                  color: #1f2937;
-                }
-                
-                .rich-text-content h1 {
-                  font-size: 1.5rem;
-                }
-                
-                .rich-text-content h2 {
-                  font-size: 1.25rem;
-                }
-                
-                .rich-text-content h3 {
-                  font-size: 1.1rem;
-                }
-                
-                .rich-text-content p {
-                  margin: 0.75rem 0;
-                  color: #374151;
-                }
-                
-                .rich-text-content ul,
-                .rich-text-content ol {
-                  margin: 1rem 0;
-                  padding-left: 1.5rem;
-                }
-                
-                .rich-text-content li {
-                  margin: 0.25rem 0;
-                }
-                
-                .rich-text-content img {
-                  max-width: 100%;
-                  height: auto;
-                  border-radius: 8px;
-                  margin: 1rem 0;
-                  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                }
-                
-                .rich-text-content a {
-                  color: #3b82f6;
-                  text-decoration: underline;
-                }
-                
-                .rich-text-content a:hover {
-                  color: #1d4ed8;
-                }
-                
-                .rich-text-content strong {
-                  font-weight: 600;
-                  color: #1f2937;
-                }
-                
-                .rich-text-content em {
-                  font-style: italic;
-                }
-                
-                .rich-text-content u {
-                  text-decoration: underline;
-                }
-                
-                .rich-text-content blockquote {
-                  border-left: 4px solid #e5e7eb;
-                  margin: 1rem 0;
-                  padding-left: 1rem;
-                  font-style: italic;
-                  color: #6b7280;
-                }
-              `}</style>
+             
 
               {/* Attachments */}
               {task.attachments.length > 0 && (

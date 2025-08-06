@@ -1,11 +1,47 @@
-
-
-// @/lib/email.ts
+// @/lib/email.ts - Updated with HTML content handling
 import { Resend } from 'resend';
 import { getEnvironmentVariable } from './utils';
 import { EmailVerificationTemplate, NotifyTaskAssigned } from '@/components/EmailTemplate';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Helper function to strip HTML tags (server-side safe)
+const stripHtmlTags = (html: string): string => {
+  if (!html || typeof html !== 'string') return '';
+  
+  // Remove HTML tags using regex (server-safe approach)
+  const stripped = html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags completely
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')   // Remove style tags completely
+    .replace(/<[^>]*>/g, '') // Remove all other HTML tags
+    .replace(/&nbsp;/gi, ' ') // Replace &nbsp; with regular space
+    .replace(/&amp;/gi, '&')  // Replace &amp; with &
+    .replace(/&lt;/gi, '<')   // Replace &lt; with <
+    .replace(/&gt;/gi, '>')   // Replace &gt; with >
+    .replace(/&quot;/gi, '"') // Replace &quot; with "
+    .replace(/&#39;/gi, "'")  // Replace &#39; with '
+    .replace(/&#x27;/gi, "'") // Replace &#x27; with '
+    .replace(/&hellip;/gi, '...') // Replace &hellip; with ...
+    .replace(/\s+/g, ' ')     // Replace multiple whitespace with single space
+    .trim();
+  
+  return stripped;
+};
+
+// Helper function to truncate text to a specific length
+const truncateText = (text: string, maxLength: number = 300): string => {
+  if (!text || text.length <= maxLength) return text;
+  
+  // Try to break at a word boundary
+  const truncated = text.substring(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(' ');
+  
+  if (lastSpace > maxLength * 0.8) {
+    return truncated.substring(0, lastSpace) + '...';
+  }
+  
+  return truncated + '...';
+};
 
 export async function sendVerificationEmail(email: string, code: string) {
   console.log(code)
@@ -73,22 +109,58 @@ export async function sendConfirmationStartupEmail({email, token, name}:{email:s
   return data;
 }
 
+// Updated function to handle HTML content properly
+export async function NOtifyAdminuser({
+  email, 
+  name: sender, 
+  username, 
+  title, 
+  description
+}: {
+  email: string;
+  username: string;
+  name: string;
+  title: string;
+  description: string;
+}) {
+  // Process the description to handle HTML content
+  const plainDescription = stripHtmlTags(description);
+  const truncatedDescription = truncateText(plainDescription, 250);
+  
+  // Log for debugging
+  console.log('Original description:', description);
+  console.log('Plain description:', plainDescription);
+  console.log('Truncated description:', truncatedDescription);
 
-export async function NOtifyAdminuser({email, name:sender, username, title, description}:{email:string, username:string, name:string, title:string, description:string}){
-  const { data, error } = await resend.emails.send({
-    from: "LunaDrone <newtasks@lunadrone.com>",
-    to: [email],
-    subject: "New Task Assigned - Luna",
-    react: NotifyTaskAssigned({  description, sender, title, username }),
-    headers: {
-     
-      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+  try {
+    const { data, error } = await resend.emails.send({
+      from: "LunaDrone <newtasks@lunadrone.com>",
+      to: [email],
+      subject: "New Task Assigned - Luna",
+      react: NotifyTaskAssigned({  
+        description: truncatedDescription, // Use plain text version
+        sender, 
+        title, 
+        username 
+      }),
+      headers: {
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+      }
+    });
+
+    if (error) {
+      console.error('Email sending error:', error);
+      throw error;
     }
-  });
 
-  if (error)  return;
-  return data;
+    return data;
+  } catch (error) {
+    console.error('Failed to send task notification email:', error);
+    throw error;
+  }
 }
+
+// Updated function for multiple users
 export async function notifyMultipleUsers(notifications: Array<{
   email: string;
   username: string; 
@@ -105,25 +177,46 @@ export async function notifyMultipleUsers(notifications: Array<{
 
   for (const notification of notifications) {
     try {
+      // Process HTML content for each notification
+      const plainDescription = stripHtmlTags(notification.description);
+      const truncatedDescription = truncateText(plainDescription, 250);
+
       await NOtifyAdminuser({
         email: notification.email,
         username: notification.username,
         name: notification.sender,
         title: notification.title,
-        description: notification.description
+        description: truncatedDescription // Use processed description
       });
+      
       successful++;
+      console.log(`Email sent successfully to ${notification.email}`);
     } catch (error) {
       console.error(`Failed to send email to ${notification.email}:`, error);
       failed++;
     }
     
+    // Add delay between emails to avoid rate limiting
     await new Promise(resolve => setTimeout(resolve, 200));
   }
 
   return { successful, failed };
 }
 
+// Utility function to validate if content contains HTML
+export function containsHtml(content: string): boolean {
+  if (!content) return false;
+  
+  // Check for common HTML tags
+  const htmlTagRegex = /<[^>]*>/;
+  return htmlTagRegex.test(content);
+}
 
+// Utility function to get content preview for emails
+export function getEmailContentPreview(htmlContent: string, maxLength: number = 200): string {
+  const plainText = stripHtmlTags(htmlContent);
+  return truncateText(plainText, maxLength);
+}
 
-
+// Export utility functions for use in other parts of the application
+export { stripHtmlTags, truncateText };

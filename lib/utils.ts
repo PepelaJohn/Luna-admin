@@ -259,3 +259,12 @@ export const getClientIp = (forwardedFor: string | null): string => {
 export function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
+
+export const getPlainTextPreview = (html: string, maxLength: number = 80): string => {
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  const plainText = temp.textContent || temp.innerText || '';
+  return plainText.length > maxLength 
+    ? plainText.substring(0, maxLength) + '...'
+    : plainText;
+};

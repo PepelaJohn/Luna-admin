@@ -79,51 +79,66 @@ const PriorityBadge = ({ priority }: { priority: string }) => {
 };
 
 // Recent Tasks Component
-const RecentTasks = ({ tasks }: { tasks: ITask[] }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-    <div className="flex items-center justify-between mb-4">
-      <h3 className="text-lg font-semibold text-gray-900">Recent Tasks</h3>
-      <Link 
-        href="/dashboard/tasks/assigned-to-me"
-        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors group"
-      >
-        View all
-        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-      </Link>
-    </div>
-    <div className="space-y-4">
-      {tasks.slice(0, 5)?.map((task, index) => (
-        <motion.div
-          key={task._id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
-          className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+const RecentTasks = ({ tasks }: { tasks: ITask[] }) => {
+  // Helper function to strip HTML and get plain text preview
+  const getPlainTextPreview = (html: string, maxLength: number = 80): string => {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    const plainText = temp.textContent || temp.innerText || '';
+    return plainText.length > maxLength 
+      ? plainText.substring(0, maxLength) + '...'
+      : plainText;
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Recent Tasks</h3>
+        <Link 
+          href="/dashboard/tasks/assigned-to-me"
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors group"
         >
-          <Link href={`/dashboard/tasks/${task._id}`} className="flex-1 min-w-0">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
-                  {task.title}
-                </h4>
-                <p className="text-sm text-gray-600 mt-1">
-                  Assigned to: {task.assignedTo.name}
-                </p>
+          View all
+          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </Link>
+      </div>
+      <div className="space-y-4">
+        {tasks.slice(0, 5)?.map((task, index) => (
+          <motion.div
+            key={task._id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+          >
+            <Link href={`/dashboard/tasks/${task._id}`} className="flex-1 min-w-0">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                    {task.title}
+                  </h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Assigned to: {task.assignedTo.name}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+                    {getPlainTextPreview(task.description)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  <PriorityBadge priority={task.priority} />
+                  {task.isOverdue && (
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                  )}
+                  <Eye className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
               </div>
-              <div className="flex items-center gap-2 ml-4">
-                <PriorityBadge priority={task.priority} />
-                {task.isOverdue && (
-                  <AlertTriangle className="w-4 h-4 text-red-500" />
-                )}
-                <Eye className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </div>
-          </Link>
-        </motion.div>
-      ))}
+            </Link>
+          </motion.div>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Upcoming Deadlines Component
 const UpcomingDeadlines = ({ tasks }: { tasks: ITaskStats['upcomingTasks'] }) => {
