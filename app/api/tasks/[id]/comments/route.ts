@@ -20,7 +20,7 @@ const getTaskComments = async (request: NextRequest, { params }: { params: { id:
       });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -107,7 +107,7 @@ const addCommentsToTask = async (request: NextRequest, { params }: { params: { i
       });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {

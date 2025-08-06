@@ -1,3 +1,4 @@
+// app/dashboard/tasks/page.tsx - Updated with proper navigation links
 "use client"
 import React, { useEffect, useState } from 'react';
 import { 
@@ -9,24 +10,25 @@ import {
   TrendingUp,
   Filter,
   Plus,
-  Search
+  Search,
+  ArrowRight,
+  Eye,
+  User
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { tasksApi, ITaskStats, ITask,  mockTasksResponse } from '@/lib/tasksApi';
 import Link from 'next/link';
 
 // Quick Stats Card Component
-const StatsCard = ({ title, value, icon: Icon, color, trend }: {
+const StatsCard = ({ title, value, icon: Icon, color, trend, href }: {
   title: string;
   value: number;
   icon: React.ElementType;
   color: string;
   trend?: { value: number; isPositive: boolean };
-}) => (
-  <motion.div
-    whileHover={{ scale: 1.02 }}
-    className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-  >
+  href?: string;
+}) => {
+  const CardContent = () => (
     <div className="flex items-center justify-between">
       <div>
         <p className="text-sm font-medium text-gray-600">{title}</p>
@@ -42,8 +44,23 @@ const StatsCard = ({ title, value, icon: Icon, color, trend }: {
         <Icon className="w-6 h-6 text-white" />
       </div>
     </div>
-  </motion.div>
-);
+  );
+
+  return (
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 group cursor-pointer"
+    >
+      {href ? (
+        <Link href={href}>
+          <CardContent />
+        </Link>
+      ) : (
+        <CardContent />
+      )}
+    </motion.div>
+  );
+};
 
 // Priority Badge Component
 const PriorityBadge = ({ priority }: { priority: string }) => {
@@ -66,9 +83,13 @@ const RecentTasks = ({ tasks }: { tasks: ITask[] }) => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-lg font-semibold text-gray-900">Recent Tasks</h3>
-      <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+      <Link 
+        href="/dashboard/tasks/assigned-to-me"
+        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors group"
+      >
         View all
-      </button>
+        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+      </Link>
     </div>
     <div className="space-y-4">
       {tasks.slice(0, 5)?.map((task, index) => (
@@ -77,20 +98,27 @@ const RecentTasks = ({ tasks }: { tasks: ITask[] }) => (
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.1 }}
-          className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors"
+          className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group"
         >
-          <div className="flex-1">
-            <h4 className="font-medium text-gray-900 truncate">{task.title}</h4>
-            <p className="text-sm text-gray-600 mt-1">
-              Assigned to: {task.assignedTo.name}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 ml-4">
-            <PriorityBadge priority={task.priority} />
-            {task.isOverdue && (
-              <AlertTriangle className="w-4 h-4 text-red-500" />
-            )}
-          </div>
+          <Link href={`/dashboard/tasks/${task._id}`} className="flex-1 min-w-0">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                  {task.title}
+                </h4>
+                <p className="text-sm text-gray-600 mt-1">
+                  Assigned to: {task.assignedTo.name}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 ml-4">
+                <PriorityBadge priority={task.priority} />
+                {task.isOverdue && (
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                )}
+                <Eye className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </div>
+          </Link>
         </motion.div>
       ))}
     </div>
@@ -99,39 +127,46 @@ const RecentTasks = ({ tasks }: { tasks: ITask[] }) => (
 
 // Upcoming Deadlines Component
 const UpcomingDeadlines = ({ tasks }: { tasks: ITaskStats['upcomingTasks'] }) => {
-
   return (
     <div className="bg-white h-full rounded-xl shadow-sm border border-gray-200 p-6">
-    <div className="flex items-center justify-between mb-4">
-      <h3 className="text-lg font-semibold text-gray-900">Upcoming Deadlines</h3>
-      <Calendar className="w-5 h-5 text-gray-400" />
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Upcoming Deadlines</h3>
+        <Calendar className="w-5 h-5 text-gray-400" />
+      </div>
+      <div className="space-y-3">
+        {tasks?.map((task, index) => (
+          <motion.div
+            key={task._id}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="group"
+          >
+            <Link href={`/dashboard/tasks/${task._id}`}>
+              <div className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all cursor-pointer">
+                <div>
+                  <h4 className="font-medium text-gray-900 text-sm group-hover:text-blue-600 transition-colors">
+                    {task.title}
+                  </h4>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Due: {new Date(task.dueDate).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <PriorityBadge priority={task.priority} />
+                  <Eye className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+        ))}
+      </div>
     </div>
-    <div className="space-y-3">
-      {tasks?.map((task, index) => (
-        <motion.div
-          key={task._id}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: index * 0.1 }}
-          className="flex items-center justify-between p-3 rounded-lg border border-gray-100"
-        >
-          <div>
-            <h4 className="font-medium text-gray-900 text-sm">{task.title}</h4>
-            <p className="text-xs text-gray-600 mt-1">
-              Due: {new Date(task.dueDate).toLocaleDateString()}
-            </p>
-          </div>
-          <PriorityBadge priority={task.priority} />
-        </motion.div>
-      ))}
-    </div>
-  </div>
   )
 };
 
 // Category Distribution Chart (Simple)
 const CategoryChart = ({ data }: { data: ITaskStats['byCategory'] }) => {
- 
   const total = Object.values(data).reduce((sum, data) => sum + data.count, 0);
   
   return (
@@ -139,7 +174,6 @@ const CategoryChart = ({ data }: { data: ITaskStats['byCategory'] }) => {
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Tasks by Category</h3>
       <div className="space-y-3">
         {data?.map(({ count, _id:category}, index) => {
-         
           const percentage = (count / total) * 100;
           
           return (
@@ -190,17 +224,11 @@ const TasksDashboard = () => {
             tasksApi.getTasks({ limit: 10, sortBy: 'createdAt', sortOrder: 'desc' })
           ]);
 
-          
-
           if((statsResponse).success && statsResponse.stats){
-
             setStats((statsResponse).stats);
-          } else{
-
           }
 
           if(tasksResponse.success && tasksResponse.data){
-
             setRecentTasks(tasksResponse.data.tasks);
           }
           
@@ -273,10 +301,20 @@ const TasksDashboard = () => {
             </p>
           </div>
           <div className="flex gap-3 mt-4 sm:mt-0">
-            <button className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <Filter className="w-4 h-4" />
-              Filter
-            </button>
+            <Link
+              href="/dashboard/tasks/assigned-to-me"
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <User className="w-4 h-4" />
+              Assigned to Me
+            </Link>
+            <Link
+              href="/dashboard/tasks/assigned-by-me"
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <Users className="w-4 h-4" />
+              Assigned by Me
+            </Link>
             <Link href={'/dashboard/tasks/new'} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
               <Plus className="w-4 h-4" />
               New Task
@@ -296,25 +334,28 @@ const TasksDashboard = () => {
             value={stats.overall.total}
             icon={CheckCircle}
             color="bg-blue-600"
-            
+            href="/dashboard/tasks/assigned-to-me"
           />
           <StatsCard
             title="In Progress"
             value={stats.overall.inProgress}
             icon={Clock}
             color="bg-orange-600"
+            href="/dashboard/tasks/assigned-to-me?status=in_progress"
           />
           <StatsCard
             title="Completed"
             value={stats.overall.completed}
             icon={CheckCircle}
             color="bg-green-600"
+            href="/dashboard/tasks/assigned-to-me?status=completed"
           />
           <StatsCard
             title="Overdue"
             value={stats.overall.overdue}
             icon={AlertTriangle}
             color="bg-red-600"
+            href="/dashboard/tasks/assigned-to-me?overdue=true"
           />
         </motion.div>
 
@@ -361,21 +402,25 @@ const TasksDashboard = () => {
           >
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              <Link href={'/dashboard/tasks/new'} className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 transition-colors">
+              <Link href={'/dashboard/tasks/new'} className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 transition-colors group">
                 <Plus className="w-5 h-5 text-blue-600" />
                 <span className="font-medium">Create New Task</span>
+                <ArrowRight className="w-4 h-4 text-gray-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
-              <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 transition-colors">
-                <Search className="w-5 h-5 text-green-600" />
-                <span className="font-medium">Search Tasks</span>
-              </button>
-              <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 transition-colors">
+              <Link href="/dashboard/tasks/assigned-to-me" className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 transition-colors group">
+                <User className="w-5 h-5 text-green-600" />
+                <span className="font-medium">Tasks Assigned to Me</span>
+                <ArrowRight className="w-4 h-4 text-gray-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+              <Link href="/dashboard/tasks/assigned-by-me" className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 transition-colors group">
                 <Users className="w-5 h-5 text-purple-600" />
-                <span className="font-medium">Manage Assignments</span>
-              </button>
-              <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 transition-colors">
+                <span className="font-medium">Tasks Assigned by Me</span>
+                <ArrowRight className="w-4 h-4 text-gray-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+              <button className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 transition-colors group">
                 <Calendar className="w-5 h-5 text-orange-600" />
                 <span className="font-medium">View Calendar</span>
+                <ArrowRight className="w-4 h-4 text-gray-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
               </button>
             </div>
           </motion.div>

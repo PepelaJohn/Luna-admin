@@ -89,8 +89,8 @@ export function useLogs(initialParams?: LogsParams) {
 
       const data = await logsApi.getLogs(queryParams);
       
-      setLogs(data.logs || []);
-      setPagination(data.pagination || {
+      setLogs(data?.logs || []);
+      setPagination(data?.pagination || {
         page: 1,
         limit: 20,
         total: 0,

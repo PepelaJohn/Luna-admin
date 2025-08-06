@@ -108,7 +108,7 @@ API.interceptors.response.use(
       }
     }
 
-    return error.response.data;
+    return error?.response?.data;
   }
 );
 

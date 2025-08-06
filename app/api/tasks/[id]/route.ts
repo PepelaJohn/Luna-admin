@@ -20,7 +20,8 @@ const getTask = async (request: NextRequest, { params }: { params: { id: string 
       });
     }
 
-    const { id } = params;
+       const { id } =await params;
+
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -39,7 +40,7 @@ const getTask = async (request: NextRequest, { params }: { params: { id: string 
     }
 
     // Check if user can access this task
-    if (!task.canUserAccess || (user.role !== 'super_admin' && 
+    if ( (user.role !== 'super_admin' && 
         task.assignedTo.userId.toString() !== user.id && 
         task.assignedBy.userId.toString() !== user.id)) {
       return returnError({
@@ -47,6 +48,7 @@ const getTask = async (request: NextRequest, { params }: { params: { id: string 
         status: FORBIDDEN
       });
     }
+    console.log(user)
 
     return returnSuccess({
       message: 'Task retrieved successfully',
@@ -76,7 +78,8 @@ const updateTask = async (request: NextRequest, { params }: { params: { id: stri
       });
     }
 
-    const { id } = params;
+       const { id } =await params;
+
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -243,7 +246,8 @@ const deleteTask = async (request: NextRequest, { params }: { params: { id: stri
       });
     }
 
-    const { id } = params;
+       const { id } =await params;
+
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
