@@ -20,19 +20,22 @@ import {
   Menu,
   ChevronDown,
   LogOut,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import Image from "next/image";
 import React, { useState, useRef, useEffect } from "react";
-import image from "@/assets/passportphoto.jpg";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/notifications/NotificationBell";
 
 const ProfilePage = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, setUser } = useAuth();
   const [activeSection, setActiveSection] = useState("personal-info");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   type SearchResult = {
     key: string;
@@ -54,10 +57,10 @@ const ProfilePage = () => {
     security: useRef<HTMLDivElement | null>(null),
   };
 
+  // imgbb API configuration
+  const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY || "YOUR_IMGBB_API_KEY";
+
   const profileMenuItems = [
-   // 0110926355
-
-
     {
       id: "logout",
       label: "Sign Out",
@@ -68,6 +71,103 @@ const ProfilePage = () => {
       danger: true,
     },
   ];
+
+  // Function to upload image to imgbb
+  const uploadToImgbb = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+      method: "POST",
+      body: formData,
+    });
+    console.log(response)
+    if (!response.ok) {
+      throw new Error("Failed to upload image");
+    }
+
+    const data = await response.json();
+    return data.data.url;
+  };
+
+  // Function to update user profile
+  const updateUserProfile = async (updates: any) => {
+    try {
+      const response = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update profile");
+      }
+
+      const result = await response.json();
+      console.log(result)
+      setUser(result.user);
+      return result;
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      throw error;
+    }
+  };
+
+  // Handle avatar upload
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file");
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size must be less than 5MB");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+
+    try {
+      // Upload to imgbb
+      const imageUrl = await uploadToImgbb(file);
+      
+      // Update user profile with new avatar URL
+      await updateUserProfile({ avatar: imageUrl });
+      
+      console.log("Avatar updated successfully!");
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      alert("Failed to upload avatar. Please try again.");
+    } finally {
+      setIsUploadingAvatar(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  // Trigger file input
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Generate avatar initials
+  const getAvatarInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+  };
 
   // Searchable items with their locations
   const searchableItems = [
@@ -322,6 +422,15 @@ const ProfilePage = () => {
 
   return (
     <div className="w-full h-screen overflow-hidden flex bg-gray-50">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleAvatarUpload}
+        className="hidden"
+      />
+
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
@@ -411,8 +520,20 @@ const ProfilePage = () => {
           >
             {/* Avatar */}
             <div className="relative">
-              <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                <User className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+                {user?.avatar ? (
+                  <Image
+                    src={user.avatar}
+                    alt="User Avatar"
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white font-semibold text-lg">
+                    {getAvatarInitials(user?.name || "User")}
+                  </span>
+                )}
               </div>
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-slate-900 rounded-full"></div>
             </div>
@@ -587,42 +708,103 @@ const ProfilePage = () => {
             <span className="flex-1 h-[2px] bg-gradient-to-r from-gray-200 via-gray-300 to-gray-400 rounded-full"></span>
           </div>
 
-          {/* Profile Card */}
-          <div className="w-full p-4 sm:p-6 lg:p-8 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 lg:gap-8 bg-white rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
-            <div className="relative flex-shrink-0">
-              <span className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full border-4 border-orange-400 overflow-hidden shadow-lg bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
-                <Image
-                  alt="profile image for pepela"
-                  height={128}
-                  width={128}
-                  src={image.src}
-                  className="w-full h-full object-cover object-center"
-                />
-              </span>
-              <button className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 bg-orange-500 hover:bg-orange-600 rounded-full p-1.5 sm:p-2 shadow-lg transition-colors duration-200">
-                <Camera className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-              </button>
-            </div>
+          {/* Enhanced Profile Card */}
+          <div className="w-full relative overflow-hidden bg-gradient-to-br from-white via-orange-50/30 to-red-50/30 rounded-3xl shadow-2xl border border-orange-100/50">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/5 via-transparent to-red-400/5"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-orange-200/20 to-transparent rounded-full -mr-32 -mt-32"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-red-200/20 to-transparent rounded-full -ml-24 -mb-24"></div>
+            
+            <div className="relative p-4 sm:p-6 lg:p-8 flex flex-col sm:flex-row items-center gap-6 lg:gap-8">
+              <div className="relative flex-shrink-0 group">
+                {/* Enhanced Avatar Container */}
+                <div className="relative">
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 rounded-full bg-gradient-to-br from-orange-400 via-orange-500 to-red-500 p-1 shadow-2xl group-hover:shadow-orange-500/25 transition-all duration-300">
+                    <div className="w-full h-full rounded-full overflow-hidden bg-white flex items-center justify-center">
+                      {user?.avatar ? (
+                        <Image
+                          alt="Profile picture"
+                          height={144}
+                          width={144}
+                          src={user.avatar}
+                          className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
+                          <span className="text-2xl lg:text-3xl font-bold text-orange-600">
+                            {getAvatarInitials(user?.name || "User")}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Upload Button */}
+                  <button
+                    onClick={triggerFileInput}
+                    disabled={isUploadingAvatar}
+                    className="absolute bottom-2 right-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-400 disabled:to-gray-500 rounded-full p-3 shadow-lg transition-all duration-200 transform hover:scale-110 disabled:cursor-not-allowed disabled:transform-none"
+                  >
+                    {isUploadingAvatar ? (
+                      <Loader2 className="w-4 h-4 text-white animate-spin" />
+                    ) : (
+                      <Camera className="w-4 h-4 text-white" />
+                    )}
+                  </button>
+                </div>
 
-            <div className="flex flex-col gap-2 text-center sm:text-left">
-              <h2 className="text-2xl sm:text-3xl font-bold capitalize text-gray-900">
-                {user?.name}
-              </h2>
-              <div className="flex items-center gap-2 text-orange-600 justify-center sm:justify-start">
-                <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="font-semibold capitalize">{user?.role}</span>
+                {/* Online Status */}
+                <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-green-400 to-green-500 border-4 border-white rounded-full shadow-lg animate-pulse"></div>
               </div>
-              <div className="flex items-center gap-2 text-gray-600 justify-center sm:justify-start">
-                <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span>Nairobi, Kenya</span>
-              </div>
-              <div className="flex gap-2 mt-2 justify-center sm:justify-start">
-                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                  {user?.isEmailVerified && "Active"}
-                </span>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                  {user?.isEmailVerified && "Verified"}
-                </span>
+
+              <div className="flex flex-col gap-3 text-center sm:text-left flex-1">
+                {/* Enhanced User Info */}
+                <div className="space-y-2">
+                  <h2 className="text-3xl sm:text-4xl font-bold capitalize bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                    {user?.name}
+                  </h2>
+                  <div className="flex items-center gap-2 text-orange-600 justify-center sm:justify-start">
+                    <div className="p-1 bg-orange-100 rounded-full">
+                      <UserCheck className="w-4 h-4" />
+                    </div>
+                    <span className="font-semibold capitalize text-lg">{user?.role}</span>
+                  </div>
+                </div>
+
+                {/* Location & Status */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-gray-600 justify-center sm:justify-start">
+                    <div className="p-1 bg-gray-100 rounded-full">
+                      <MapPin className="w-4 h-4" />
+                    </div>
+                    <span className="font-medium">Nairobi, Kenya</span>
+                  </div>
+                  
+                  <div className="flex gap-3 justify-center sm:justify-start flex-wrap">
+                    <span className="px-4 py-2 bg-gradient-to-r from-green-100 to-green-200 text-green-800 rounded-full text-sm font-semibold border border-green-300/30 shadow-sm">
+                      ✓ {user?.isEmailVerified ? "Active" : "Inactive"}
+                    </span>
+                    <span className="px-4 py-2 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 rounded-full text-sm font-semibold border border-blue-300/30 shadow-sm">
+                      ✓ {user?.isEmailVerified ? "Verified" : "Unverified"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200/50">
+                  <div className="text-center p-2">
+                    <div className="text-lg font-bold text-gray-800">{user?.role === 'admin' ? '24/7' : 'Limited'}</div>
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">Access</div>
+                  </div>
+                  <div className="text-center p-2">
+                    <div className="text-lg font-bold text-gray-800">{user?.isEmailVerified ? 'High' : 'Medium'}</div>
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">Security</div>
+                  </div>
+                  <div className="text-center p-2 sm:col-span-1 col-span-2">
+                    <div className="text-lg font-bold text-gray-800">{user?.lastLogin ? 'Recent' : 'New'}</div>
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">Activity</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

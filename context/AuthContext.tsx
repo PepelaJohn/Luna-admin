@@ -33,6 +33,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   setError: (error: string | null) => void;
+  setUser:React.Dispatch<React.SetStateAction<User | null>>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -228,6 +229,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
     setError,
+    setUser,
   };
 
   return (
