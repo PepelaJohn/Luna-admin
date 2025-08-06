@@ -117,12 +117,12 @@ const TaskSchema = new Schema<ITask>({
   },
   dueDate: {
     type: Date,
-    validate: {
-      validator: function(this: ITask, value: Date) {
-        return !value || value > new Date();
-      },
-      message: 'Due date must be in the future'
-    }
+    // validate: {
+    //   validator: function(this: ITask, value: Date) {
+    //     return !value || value > new Date();
+    //   },
+    //   message: 'Due date must be in the future'
+    // }
   },
   category: {
     type: String,
