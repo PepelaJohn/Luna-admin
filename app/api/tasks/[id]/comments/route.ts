@@ -192,6 +192,7 @@ const addCommentsToTask = async (request: NextRequest, { params }: { params: { i
     });
 
   } catch (error: any) {
+    console.error(error)
     return returnError({
       message: error.message || "Could not add comment to task",
       error,

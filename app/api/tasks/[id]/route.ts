@@ -1,15 +1,24 @@
 // app/api/tasks/[id]/route.ts - Updated with notification integration
-import { NextRequest, NextResponse } from 'next/server';
-import Task from '@/models/Task';
-import { withAuth } from '@/lib/api-middleware';
-import { returnError, returnSuccess } from '@/lib/response';
-import { connectDB } from '@/lib/db';
-import { BAD_REQUEST, FORBIDDEN, NOT_FOUND, UNAUTHORIZED, INTERNAL_SERVER_ERROR } from '@/constants/http';
-import mongoose from 'mongoose';
-import NotificationService from '@/lib/notificationService';
+import { NextRequest, NextResponse } from "next/server";
+import Task from "@/models/Task";
+import { withAuth } from "@/lib/api-middleware";
+import { returnError, returnSuccess } from "@/lib/response";
+import { connectDB } from "@/lib/db";
+import {
+  BAD_REQUEST,
+  FORBIDDEN,
+  NOT_FOUND,
+  UNAUTHORIZED,
+  INTERNAL_SERVER_ERROR,
+} from "@/constants/http";
+import mongoose from "mongoose";
+import NotificationService from "@/lib/notificationService";
 
 // GET /api/tasks/[id] - Get a specific task
-const getTask = async (request: NextRequest, { params }: { params: { id: string } }) => {
+const getTask = async (
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) => {
   try {
     await connectDB();
 
@@ -27,7 +36,7 @@ const getTask = async (request: NextRequest, { params }: { params: { id: string 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return returnError({
         message: "Invalid task ID",
-        status: BAD_REQUEST
+        status: BAD_REQUEST,
       });
     }
 
@@ -35,37 +44,41 @@ const getTask = async (request: NextRequest, { params }: { params: { id: string 
     if (!task) {
       return returnError({
         message: "Task not found",
-        status: NOT_FOUND
+        status: NOT_FOUND,
       });
     }
 
     // Check if user can access this task
-    if ((user.role !== 'super_admin' && 
-        task.assignedTo.userId.toString() !== user.id && 
-        task.assignedBy.userId.toString() !== user.id)) {
+    if (
+      user.role !== "super_admin" &&
+      task.assignedTo.userId.toString() !== user.id &&
+      task.assignedBy.userId.toString() !== user.id
+    ) {
       return returnError({
         message: "Access denied",
-        status: FORBIDDEN
+        status: FORBIDDEN,
       });
     }
 
     return returnSuccess({
-      message: 'Task retrieved successfully',
+      message: "Task retrieved successfully",
       data: task,
-      status: 200
+      status: 200,
     });
-
   } catch (error: any) {
     return returnError({
       message: error.message || "Could not retrieve task",
       error,
-      status: error.status || INTERNAL_SERVER_ERROR
+      status: error.status || INTERNAL_SERVER_ERROR,
     });
   }
 };
 
 // PUT /api/tasks/[id] - Update a specific task with notification support
-const updateTask = async (request: NextRequest, { params }: { params: { id: string } }) => {
+const updateTask = async (
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) => {
   try {
     await connectDB();
 
@@ -83,7 +96,7 @@ const updateTask = async (request: NextRequest, { params }: { params: { id: stri
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return returnError({
         message: "Invalid task ID",
-        status: BAD_REQUEST
+        status: BAD_REQUEST,
       });
     }
 
@@ -91,7 +104,7 @@ const updateTask = async (request: NextRequest, { params }: { params: { id: stri
     if (!task) {
       return returnError({
         message: "Task not found",
-        status: NOT_FOUND
+        status: NOT_FOUND,
       });
     }
 
@@ -99,7 +112,7 @@ const updateTask = async (request: NextRequest, { params }: { params: { id: stri
     if (!task.canUserAccess(user.id, user.role)) {
       return returnError({
         message: "Access denied",
-        status: FORBIDDEN
+        status: FORBIDDEN,
       });
     }
 
@@ -111,7 +124,7 @@ const updateTask = async (request: NextRequest, { params }: { params: { id: stri
       status,
       dueDate,
       category,
-      attachments
+      attachments,
     } = body;
 
     // Store original status for notification comparison
@@ -123,8 +136,8 @@ const updateTask = async (request: NextRequest, { params }: { params: { id: stri
     if (title !== undefined) {
       if (!title || title.trim().length === 0) {
         return returnError({
-          message: 'Task title cannot be empty',
-          status: BAD_REQUEST
+          message: "Task title cannot be empty",
+          status: BAD_REQUEST,
         });
       }
       updateFields.title = title.trim();
@@ -133,42 +146,47 @@ const updateTask = async (request: NextRequest, { params }: { params: { id: stri
     if (description !== undefined) {
       if (!description || description.trim().length === 0) {
         return returnError({
-          message: 'Task description cannot be empty',
-          status: BAD_REQUEST
+          message: "Task description cannot be empty",
+          status: BAD_REQUEST,
         });
       }
       updateFields.description = description.trim();
     }
 
     if (priority !== undefined) {
-      if (!['low', 'medium', 'high', 'urgent'].includes(priority)) {
+      if (!["low", "medium", "high", "urgent"].includes(priority)) {
         return returnError({
-          message: 'Invalid priority value',
-          status: BAD_REQUEST
+          message: "Invalid priority value",
+          status: BAD_REQUEST,
         });
       }
       updateFields.priority = priority;
     }
 
     if (status !== undefined) {
-      if (!['pending', 'in_progress', 'completed', 'cancelled'].includes(status)) {
+      if (
+        !["pending", "in_progress", "completed", "cancelled"].includes(status)
+      ) {
         return returnError({
-          message: 'Invalid status value',
-          status: BAD_REQUEST
+          message: "Invalid status value",
+          status: BAD_REQUEST,
         });
       }
-      
+
       // Use the instance method to update status
       if (status !== task.status) {
-        await task.updateStatus(status, status === 'completed' ? new Date() : undefined);
+        await task.updateStatus(
+          status,
+          status === "completed" ? new Date() : undefined
+        );
       }
     }
 
     if (dueDate !== undefined) {
       if (dueDate && new Date(dueDate) <= new Date()) {
         return returnError({
-          message: 'Due date must be in the future',
-          status: BAD_REQUEST
+          message: "Due date must be in the future",
+          status: BAD_REQUEST,
         });
       }
       updateFields.dueDate = dueDate ? new Date(dueDate) : null;
@@ -176,26 +194,26 @@ const updateTask = async (request: NextRequest, { params }: { params: { id: stri
 
     if (category !== undefined) {
       const validCategories = [
-        'user_management',
-        'system_config',
-        'content_review',
-        'security_audit',
-        'data_analysis',
-        'maintenance',
-        'support',
-        'other'
+        "user_management",
+        "system_config",
+        "content_review",
+        "security_audit",
+        "data_analysis",
+        "maintenance",
+        "support",
+        "other",
       ];
       if (!validCategories.includes(category)) {
         return returnError({
-          message: 'Invalid category value',
-          status: BAD_REQUEST
+          message: "Invalid category value",
+          status: BAD_REQUEST,
         });
       }
       updateFields.category = category;
     }
 
     if (attachments !== undefined) {
-      updateFields.attachments = Array.isArray(attachments) 
+      updateFields.attachments = Array.isArray(attachments)
         ? attachments.filter((att: string) => att && att.trim().length > 0)
         : [];
     }
@@ -214,45 +232,50 @@ const updateTask = async (request: NextRequest, { params }: { params: { id: stri
             assignedBy: {
               userId: task.assignedBy.userId.toString(),
               name: task.assignedBy.name,
-              email: task.assignedBy.email
+              email: task.assignedBy.email,
             },
             assignedTo: {
               userId: task.assignedTo.userId.toString(),
               name: task.assignedTo.name,
-              email: task.assignedTo.email
-            }
+              email: task.assignedTo.email,
+            },
           },
           {
             userId: user.id,
             name: user.name,
-            email: user.email
+            email: user.email,
           },
           originalStatus,
           status
         );
       } catch (notificationError) {
-        console.error("Failed to create status change notification:", notificationError);
+        console.error(
+          "Failed to create status change notification:",
+          notificationError
+        );
         // Don't fail the update if notification fails
       }
     }
 
     return returnSuccess({
-      message: 'Task updated successfully',
+      message: "Task updated successfully",
       data: task,
-      status: 200
+      status: 200,
     });
-
   } catch (error: any) {
     return returnError({
       message: error.message || "Could not update task",
       error,
-      status: error.status || INTERNAL_SERVER_ERROR
+      status: error.status || INTERNAL_SERVER_ERROR,
     });
   }
 };
 
 // DELETE /api/tasks/[id] - Delete/Cancel a specific task
-const deleteTask = async (request: NextRequest, { params }: { params: { id: string } }) => {
+const deleteTask = async (
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) => {
   try {
     await connectDB();
 
@@ -270,7 +293,7 @@ const deleteTask = async (request: NextRequest, { params }: { params: { id: stri
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return returnError({
         message: "Invalid task ID",
-        status: BAD_REQUEST
+        status: BAD_REQUEST,
       });
     }
 
@@ -278,30 +301,33 @@ const deleteTask = async (request: NextRequest, { params }: { params: { id: stri
     if (!task) {
       return returnError({
         message: "Task not found",
-        status: NOT_FOUND
+        status: NOT_FOUND,
       });
     }
 
     // Only the task creator or super admin can delete tasks
-    if (user.role !== 'super_admin' && task.assignedBy.userId.toString() !== user.id) {
+    if (
+      user.role !== "super_admin" &&
+      task.assignedBy.userId.toString() !== user.id
+    ) {
       return returnError({
         message: "Only the task creator or super admin can delete tasks",
-        status: FORBIDDEN
+        status: FORBIDDEN,
       });
     }
 
     // Check if task can be deleted (not completed)
-    if (task.status === 'completed') {
+    if (task.status === "completed") {
       return returnError({
         message: "Cannot delete completed tasks",
-        status: BAD_REQUEST
+        status: BAD_REQUEST,
       });
     }
 
     const originalStatus = task.status;
 
     // Instead of deleting, mark as cancelled (soft delete)
-    await task.updateStatus('cancelled');
+    await task.updateStatus("cancelled");
 
     // Create notification for cancellation
     try {
@@ -312,41 +338,43 @@ const deleteTask = async (request: NextRequest, { params }: { params: { id: stri
           assignedBy: {
             userId: task.assignedBy.userId.toString(),
             name: task.assignedBy.name,
-            email: task.assignedBy.email
+            email: task.assignedBy.email,
           },
           assignedTo: {
             userId: task.assignedTo.userId.toString(),
             name: task.assignedTo.name,
-            email: task.assignedTo.email
-          }
+            email: task.assignedTo.email,
+          },
         },
         {
           userId: user.id,
           name: user.name,
-          email: user.email
+          email: user.email,
         },
         originalStatus,
-        'cancelled'
+        "cancelled"
       );
     } catch (notificationError) {
-      console.error("Failed to create cancellation notification:", notificationError);
+      console.error(
+        "Failed to create cancellation notification:",
+        notificationError
+      );
     }
 
     return returnSuccess({
-      message: 'Task cancelled successfully',
+      message: "Task cancelled successfully",
       data: task,
-      status: 200
+      status: 200,
     });
-
   } catch (error: any) {
     return returnError({
       message: error.message || "Could not delete task",
       error,
-      status: error.status || INTERNAL_SERVER_ERROR
+      status: error.status || INTERNAL_SERVER_ERROR,
     });
   }
 };
 
-export const GET = withAuth(getTask, { roles: ['admin', 'super_admin'] });
-export const PUT = withAuth(updateTask, { roles: ['admin', 'super_admin'] });
-export const DELETE = withAuth(deleteTask, { roles: ['admin', 'super_admin'] });
+export const GET = withAuth(getTask, { roles: ["admin", "super_admin"] });
+export const PUT = withAuth(updateTask, { roles: ["admin", "super_admin"] });
+export const DELETE = withAuth(deleteTask, { roles: ["admin", "super_admin"] });
