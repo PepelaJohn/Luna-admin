@@ -245,7 +245,7 @@ const TaskDetailPage = () => {
       }
 
       const result = await response.json();
-      setTask(result.data);
+      setTask(result);
     } catch (err) {
       setError('Failed to load task');
     } finally {
@@ -288,7 +288,7 @@ const TaskDetailPage = () => {
         const result = await response.json();
         setTask(prev => prev ? {
           ...prev,
-          comments: [...prev.comments, result.data]
+          comments: [...prev.comments, result._doc]
         } : null);
         setNewComment('');
       } else {
