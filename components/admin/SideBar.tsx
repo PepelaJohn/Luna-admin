@@ -19,6 +19,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import NotificationBell from "../notifications/NotificationBell";
+import Image from "next/image";
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -287,8 +288,9 @@ const router = useRouter()
               {/* Avatar */}
               <div className="relative">
                 
-                <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                  <User className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 bg-gradient-to-r overflow-hidden from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                  { user?.avatar ? <Image src={user.avatar} height={48} width={48} className="w-full h-full object-center object-contain" alt="user avatar"></Image>:
+                    <User className="w-6 h-6 text-white" />}
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-slate-900 rounded-full"></div>
               </div>
