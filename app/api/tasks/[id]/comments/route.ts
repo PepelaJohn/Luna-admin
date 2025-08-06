@@ -1,4 +1,4 @@
-// app/api/tasks/[id]/comments/route.ts
+// app/api/tasks/[id]/comments/route.ts - Updated with notification integration
 import { NextRequest, NextResponse } from 'next/server';
 import Task from '@/models/Task';
 import { withAuth } from '@/lib/api-middleware';
@@ -6,6 +6,7 @@ import { returnError, returnSuccess } from '@/lib/response';
 import { connectDB } from '@/lib/db';
 import { UNAUTHORIZED, NOT_FOUND, FORBIDDEN, BAD_REQUEST, INTERNAL_SERVER_ERROR } from '@/constants/http';
 import mongoose from 'mongoose';
+import NotificationService from '@/lib/notificationService';
 
 // GET /api/tasks/[id]/comments - Get all comments for a task
 const getTaskComments = async (request: NextRequest, { params }: { params: { id: string } }) => {
@@ -94,7 +95,7 @@ const getTaskComments = async (request: NextRequest, { params }: { params: { id:
   }
 };
 
-// POST /api/tasks/[id]/comments - Add comment to task (your existing implementation)
+// POST /api/tasks/[id]/comments - Add comment to task with notification support
 const addCommentsToTask = async (request: NextRequest, { params }: { params: { id: string } }) => {
   try {
     await connectDB();
@@ -148,21 +149,41 @@ const addCommentsToTask = async (request: NextRequest, { params }: { params: { i
       });
     }
 
+    // Get existing commenters before adding the new comment
+    const existingCommenters = NotificationService.getUniqueCommenters(task.comments);
+
     // Add comment using the instance method
     await task.addComment(user.id, user.name, message.trim());
 
-    // TODO: Create notification for the other party
-    // const notifyUserId = task.assignedTo.userId.toString() === user.id 
-    //   ? task.assignedBy.userId 
-    //   : task.assignedTo.userId;
-    
-    // await createNotification({
-    //   type: 'task_comment',
-    //   to: notifyUserId,
-    //   from: user.id,
-    //   relatedTask: task._id,
-    //   message: `New comment on task: ${task.title}`
-    // });
+    // Create notifications for comment
+    try {
+      await NotificationService.createTaskCommentNotifications(
+        {
+          taskId: (task._id as any).toString(),
+          title: task.title,
+          assignedBy: {
+            userId: task.assignedBy.userId.toString(),
+            name: task.assignedBy.name,
+            email: task.assignedBy.email
+          },
+          assignedTo: {
+            userId: task.assignedTo.userId.toString(),
+            name: task.assignedTo.name,
+            email: task.assignedTo.email
+          }
+        },
+        {
+          userId: user.id,
+          name: user.name,
+          email: user.email
+        },
+        message.trim(),
+        existingCommenters
+      );
+    } catch (notificationError) {
+      console.error("Failed to create comment notifications:", notificationError);
+      // Don't fail the comment creation if notification fails
+    }
 
     return returnSuccess({
       message: 'Comment added successfully',

@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import NotificationBell from "../notifications/NotificationBell";
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -174,7 +175,7 @@ const router = useRouter()
       {/* Sidebar */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 
+          fixed inset-y-0 left-0 z-50 h-screen w-72 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 
           text-white transform transition-all duration-300 ease-in-out shadow-2xl
           lg:translate-x-0 lg:static lg:inset-0
           ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
@@ -197,7 +198,7 @@ const router = useRouter()
           </div>
 
           {/* Navigation Items */}
-          <div className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          <div className="flex-1 px-4 py-6 space-y-2 custom-scrollbar overflow-y-auto">
             <div className="mb-6">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-2">
                 Main Navigation
@@ -227,7 +228,7 @@ const router = useRouter()
                       )}
                       
                       <div className={`
-                        p-2 rounded-lg mr-3 transition-colors
+                        p-2 rounded-lg mr-3 transition-colors 
                         ${isActive 
                           ? "bg-gradient-to-r from-yellow-400/20 to-orange-500/20" 
                           : "bg-slate-700/50 group-hover:bg-slate-600/50"
@@ -245,7 +246,34 @@ const router = useRouter()
                       </div>
                     </Link>
                   );
+
+              
                 })}
+
+<Link
+                      href={`/dashboard/notifications`}
+                     
+                    
+                      className={`
+                        group w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl 
+                        transition-all duration-200 relative overflow-hidden text-slate-300 hover:text-white hover:bg-slate-700/50
+                     
+                      `}
+                    >
+                     
+                      
+                     
+                       <NotificationBell></NotificationBell>
+                    
+                      
+                      <div className="flex-1 text-left">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">Notifications</span>
+                         
+                        </div>
+                        <p className="text-xs text-slate-400 mt-0.5"></p>
+                      </div>
+                    </Link>
               </div>
             </div>
           </div>
@@ -258,6 +286,7 @@ const router = useRouter()
             >
               {/* Avatar */}
               <div className="relative">
+                
                 <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
                   <User className="w-6 h-6 text-white" />
                 </div>

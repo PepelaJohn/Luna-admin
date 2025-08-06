@@ -1,4 +1,4 @@
-// app/api/tasks/[id]/route.ts
+// app/api/tasks/[id]/route.ts - Updated with notification integration
 import { NextRequest, NextResponse } from 'next/server';
 import Task from '@/models/Task';
 import { withAuth } from '@/lib/api-middleware';
@@ -6,6 +6,7 @@ import { returnError, returnSuccess } from '@/lib/response';
 import { connectDB } from '@/lib/db';
 import { BAD_REQUEST, FORBIDDEN, NOT_FOUND, UNAUTHORIZED, INTERNAL_SERVER_ERROR } from '@/constants/http';
 import mongoose from 'mongoose';
+import NotificationService from '@/lib/notificationService';
 
 // GET /api/tasks/[id] - Get a specific task
 const getTask = async (request: NextRequest, { params }: { params: { id: string } }) => {
@@ -20,8 +21,7 @@ const getTask = async (request: NextRequest, { params }: { params: { id: string 
       });
     }
 
-       const { id } =await params;
-
+    const { id } = await params;
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -40,7 +40,7 @@ const getTask = async (request: NextRequest, { params }: { params: { id: string 
     }
 
     // Check if user can access this task
-    if ( (user.role !== 'super_admin' && 
+    if ((user.role !== 'super_admin' && 
         task.assignedTo.userId.toString() !== user.id && 
         task.assignedBy.userId.toString() !== user.id)) {
       return returnError({
@@ -48,7 +48,6 @@ const getTask = async (request: NextRequest, { params }: { params: { id: string 
         status: FORBIDDEN
       });
     }
-    console.log(user)
 
     return returnSuccess({
       message: 'Task retrieved successfully',
@@ -65,7 +64,7 @@ const getTask = async (request: NextRequest, { params }: { params: { id: string 
   }
 };
 
-// PUT /api/tasks/[id] - Update a specific task
+// PUT /api/tasks/[id] - Update a specific task with notification support
 const updateTask = async (request: NextRequest, { params }: { params: { id: string } }) => {
   try {
     await connectDB();
@@ -78,8 +77,7 @@ const updateTask = async (request: NextRequest, { params }: { params: { id: stri
       });
     }
 
-       const { id } =await params;
-
+    const { id } = await params;
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -115,6 +113,9 @@ const updateTask = async (request: NextRequest, { params }: { params: { id: stri
       category,
       attachments
     } = body;
+
+    // Store original status for notification comparison
+    const originalStatus = task.status;
 
     // Update allowed fields
     const updateFields: any = {};
@@ -203,20 +204,37 @@ const updateTask = async (request: NextRequest, { params }: { params: { id: stri
     Object.assign(task, updateFields);
     await task.save();
 
-    // TODO: Create notification if status changed or other significant updates
-    // if (status && status !== originalStatus) {
-    //   const notifyUserId = task.assignedTo.userId.toString() === user.id 
-    //     ? task.assignedBy.userId 
-    //     : task.assignedTo.userId;
-      
-    //   await createNotification({
-    //     type: 'task_updated',
-    //     to: notifyUserId,
-    //     from: user.id,
-    //     relatedTask: task._id,
-    //     message: `Task status updated: ${task.title} - ${status}`
-    //   });
-    // }
+    // Create notification if status changed
+    if (status && status !== originalStatus) {
+      try {
+        await NotificationService.createTaskStatusChangedNotification(
+          {
+            taskId: (task._id as any).toString(),
+            title: task.title,
+            assignedBy: {
+              userId: task.assignedBy.userId.toString(),
+              name: task.assignedBy.name,
+              email: task.assignedBy.email
+            },
+            assignedTo: {
+              userId: task.assignedTo.userId.toString(),
+              name: task.assignedTo.name,
+              email: task.assignedTo.email
+            }
+          },
+          {
+            userId: user.id,
+            name: user.name,
+            email: user.email
+          },
+          originalStatus,
+          status
+        );
+      } catch (notificationError) {
+        console.error("Failed to create status change notification:", notificationError);
+        // Don't fail the update if notification fails
+      }
+    }
 
     return returnSuccess({
       message: 'Task updated successfully',
@@ -246,8 +264,7 @@ const deleteTask = async (request: NextRequest, { params }: { params: { id: stri
       });
     }
 
-       const { id } =await params;
-
+    const { id } = await params;
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -281,18 +298,39 @@ const deleteTask = async (request: NextRequest, { params }: { params: { id: stri
       });
     }
 
+    const originalStatus = task.status;
+
     // Instead of deleting, mark as cancelled (soft delete)
     await task.updateStatus('cancelled');
 
-    // TODO: Create notification
-    // const notifyUserId = task.assignedTo.userId;
-    // await createNotification({
-    //   type: 'task_cancelled',
-    //   to: notifyUserId,
-    //   from: user.id,
-    //   relatedTask: task._id,
-    //   message: `Task cancelled: ${task.title}`
-    // });
+    // Create notification for cancellation
+    try {
+      await NotificationService.createTaskStatusChangedNotification(
+        {
+          taskId: (task._id as any).toString(),
+          title: task.title,
+          assignedBy: {
+            userId: task.assignedBy.userId.toString(),
+            name: task.assignedBy.name,
+            email: task.assignedBy.email
+          },
+          assignedTo: {
+            userId: task.assignedTo.userId.toString(),
+            name: task.assignedTo.name,
+            email: task.assignedTo.email
+          }
+        },
+        {
+          userId: user.id,
+          name: user.name,
+          email: user.email
+        },
+        originalStatus,
+        'cancelled'
+      );
+    } catch (notificationError) {
+      console.error("Failed to create cancellation notification:", notificationError);
+    }
 
     return returnSuccess({
       message: 'Task cancelled successfully',

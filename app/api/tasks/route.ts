@@ -1,4 +1,4 @@
-// app/api/tasks/route.ts
+// app/api/tasks/route.ts - Updated with HTML content handling
 import { NextRequest, NextResponse } from "next/server";
 import Task from "@/models/Task";
 import { withAuth } from "@/lib/api-middleware";
@@ -11,7 +11,8 @@ import {
   UNAUTHORIZED,
 } from "@/constants/http";
 import mongoose from "mongoose";
-import { NOtifyAdminuser, notifyMultipleUsers } from "@/lib/email";
+import { NOtifyAdminuser, notifyMultipleUsers, stripHtmlTags } from "@/lib/email";
+import NotificationService from "@/lib/notificationService";
 
 // GET /api/tasks - Get all tasks for the user
 const getTasks = async (request: NextRequest) => {
@@ -43,7 +44,7 @@ const getTasks = async (request: NextRequest) => {
     if (priority) filters.priority = priority;
     if (category) filters.category = category;
 
-    // Search in title and description
+    // Search in title and description (search in plain text for better results)
     if (search) {
       filters.$or = [
         { title: { $regex: search, $options: "i" } },
@@ -132,7 +133,7 @@ const getTasks = async (request: NextRequest) => {
   }
 };
 
-// POST /api/tasks - Create a new task (maintains backward compatibility)
+// POST /api/tasks - Create a new task with HTML content support
 const createTask = async (request: NextRequest) => {
   try {
     await connectDB();
@@ -168,6 +169,22 @@ const createTask = async (request: NextRequest) => {
     if (!description || description.trim().length === 0) {
       return returnError({
         message: "Task description is required",
+        status: BAD_REQUEST,
+      });
+    }
+
+    // Validate description length (check plain text length for HTML content)
+    const plainTextDescription = stripHtmlTags(description);
+    if (plainTextDescription.length > 5000) {
+      return returnError({
+        message: "Task description is too long (max 5000 characters)",
+        status: BAD_REQUEST,
+      });
+    }
+
+    if (plainTextDescription.trim().length === 0) {
+      return returnError({
+        message: "Task description cannot be empty",
         status: BAD_REQUEST,
       });
     }
@@ -242,10 +259,10 @@ const createTask = async (request: NextRequest) => {
       });
     }
 
-    // Create task
+    // Create task - store HTML content as-is
     const task = new Task({
       title: title.trim(),
-      description: description.trim(),
+      description: description.trim(), // Keep HTML content
       assignedBy: {
         userId: user.id,
         name: user.name,
@@ -266,15 +283,38 @@ const createTask = async (request: NextRequest) => {
 
     await task.save();
 
-    // Send email notification
+    // Create notification for task assignment
+    try {
+      await NotificationService.createTaskAssignedNotification({
+        taskId: (task._id as any).toString(),
+        title: task.title,
+        assignedBy: {
+          userId: user.id,
+          name: user.name,
+          email: user.email
+        },
+        assignedTo: {
+          userId: assignedToUserId_,
+          name: assignedToName,
+          email: assignedToEmail
+        }
+      });
+    } catch (notificationError) {
+      console.error("Failed to create notification:", notificationError);
+      // Don't fail task creation if notification fails
+    }
+
+    // Send email notification - the email function will handle HTML content processing
     try {
       await NOtifyAdminuser({
-        description,
+        description: description, // Pass original HTML content - email function will process it
         email: assignedToEmail,
         name: user.name,
         title,
         username: assignedToName
       });
+      
+      console.log(`Task notification email sent to ${assignedToEmail}`);
     } catch (emailError) {
       console.error("Failed to send email notification:", emailError);
       // Don't fail the task creation if email fails
@@ -286,9 +326,170 @@ const createTask = async (request: NextRequest) => {
       status: 201,
     });
   } catch (error: any) {
-    console.log(error.message);
+    console.log('Task creation error:', error.message);
     return returnError({
       message: error.message || "Could not create task",
+      error,
+      status: error.status || INTERNAL_SERVER_ERROR,
+    });
+  }
+};
+
+// Additional endpoint for creating multiple tasks with HTML content support
+const createMultipleTasks = async (request: NextRequest) => {
+  try {
+    await connectDB();
+
+    const user = (request as any).user;
+    if (!user) {
+      return returnError({
+        message: "Not authorized",
+        status: UNAUTHORIZED,
+      });
+    }
+
+    const body = await request.json();
+    const {
+      title,
+      description,
+      priority = "medium",
+      dueDate,
+      category,
+      attachments = [],
+      assignedToUsers = []
+    } = body;
+
+    // Validation (same as single task)
+    if (!title || title.trim().length === 0) {
+      return returnError({
+        message: "Task title is required",
+        status: BAD_REQUEST,
+      });
+    }
+
+    if (!description || description.trim().length === 0) {
+      return returnError({
+        message: "Task description is required",
+        status: BAD_REQUEST,
+      });
+    }
+
+    // Validate description length
+    const plainTextDescription = stripHtmlTags(description);
+    if (plainTextDescription.length > 5000) {
+      return returnError({
+        message: "Task description is too long (max 5000 characters)",
+        status: BAD_REQUEST,
+      });
+    }
+
+    if (!assignedToUsers || assignedToUsers.length === 0) {
+      return returnError({
+        message: "At least one user must be assigned",
+        status: BAD_REQUEST,
+      });
+    }
+
+    if (!category) {
+      return returnError({
+        message: "Task category is required",
+        status: BAD_REQUEST,
+      });
+    }
+
+    const createdTasks = [];
+    const emailNotifications = [];
+    let successful = 0;
+    let failed = 0;
+
+    // Create tasks for each assigned user
+    for (const assignedUser of assignedToUsers) {
+      try {
+        const task = new Task({
+          title: title.trim(),
+          description: description.trim(), // Keep HTML content
+          assignedBy: {
+            userId: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          },
+          assignedTo: {
+            userId: assignedUser._id,
+            name: assignedUser.name,
+            email: assignedUser.email,
+            role: assignedUser.role,
+          },
+          priority,
+          dueDate: dueDate ? new Date(dueDate) : undefined,
+          category,
+          attachments: attachments.filter((att: string) => att.trim().length > 0),
+        });
+
+        await task.save();
+        createdTasks.push(task);
+
+        // Create notification for task assignment
+        try {
+          await NotificationService.createTaskAssignedNotification({
+            taskId: (task._id as any).toString(),
+            title: task.title,
+            assignedBy: {
+              userId: user.id,
+              name: user.name,
+              email: user.email
+            },
+            assignedTo: {
+              userId: assignedUser._id,
+              name: assignedUser.name,
+              email: assignedUser.email
+            }
+          });
+        } catch (notificationError) {
+          console.error(`Failed to create notification for ${assignedUser.name}:`, notificationError);
+        }
+
+        // Prepare email notification
+        emailNotifications.push({
+          email: assignedUser.email,
+          username: assignedUser.name,
+          title,
+          description, // HTML content will be processed by email function
+          sender: user.name
+        });
+
+        successful++;
+      } catch (error) {
+        console.error(`Failed to create task for ${assignedUser.name}:`, error);
+        failed++;
+      }
+    }
+
+    // Send email notifications
+    if (emailNotifications.length > 0) {
+      try {
+        const emailResults = await notifyMultipleUsers(emailNotifications);
+        console.log(`Email notifications: ${emailResults.successful} successful, ${emailResults.failed} failed`);
+      } catch (emailError) {
+        console.error("Failed to send email notifications:", emailError);
+      }
+    }
+
+    return returnSuccess({
+      message: `Tasks created successfully. ${successful} successful, ${failed} failed.`,
+      data: { 
+        tasks: createdTasks,
+        successful,
+        failed,
+        total: assignedToUsers.length
+      },
+      status: 201,
+    });
+
+  } catch (error: any) {
+    console.log('Multiple task creation error:', error.message);
+    return returnError({
+      message: error.message || "Could not create tasks",
       error,
       status: error.status || INTERNAL_SERVER_ERROR,
     });
