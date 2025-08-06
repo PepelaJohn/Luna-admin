@@ -169,6 +169,7 @@ async function createUserHandler(request: NextRequest) {
     });
   } catch (error: any) {
     // Log failed creation attempt
+    console.log(error)
     try {
       console.log(error)
       console.log((request as any).user?.id,(request as any).user?._id )

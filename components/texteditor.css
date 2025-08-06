@@ -1,0 +1,52 @@
+.editor-content ul {
+  list-style-type: disc;
+  margin-left: 20px;
+  padding-left: 0;
+}
+.editor-content ol {
+  list-style-type: decimal;
+  margin-left: 20px;
+  padding-left: 0;
+}
+.editor-content li {
+  margin: 4px 0;
+  padding-left: 4px;
+}
+.editor-content ul li {
+  display: list-item;
+}
+.editor-content ol li {
+  display: list-item;
+}
+.editor-content h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin: 0.67em 0;
+}
+.editor-content h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 0.83em 0;
+}
+.editor-content h3 {
+  font-size: 1.17em;
+  font-weight: bold;
+  margin: 1em 0;
+}
+.editor-content p {
+  margin: 1em 0;
+}
+.editor-content strong,
+.editor-content b {
+  font-weight: bold;
+}
+.editor-content em,
+.editor-content i {
+  font-style: italic;
+}
+.editor-content u {
+  text-decoration: underline;
+}
+.editor-content strike {
+  text-decoration: line-through;
+}

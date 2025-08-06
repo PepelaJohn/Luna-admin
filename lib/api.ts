@@ -383,3 +383,87 @@ export const partnersApi = {
     }
   },
 };
+
+
+export const sendPasswordResetEmail = async (
+  email: string
+): Promise<IResetResponse> => {
+  try {
+    const response: any = await API.post("/auth/password/forgot", { email });
+    return response;
+  } catch (error: any) {
+    throw new Error(
+      error.error || error.message || "Failed to send password reset email"
+    );
+  }
+};
+
+export interface IResetResponse {
+  message: string;
+  expiresAt: string;
+  instructions: string;
+}
+
+export interface IUser {
+  _id?: string;
+  name: string;
+  email: string;
+  phone?: string;
+  password?: string;
+  role: "user" | "corporate" | "admin";
+  isEmailVerified: boolean;
+  providers?: {
+    google?: {
+      id: string;
+      email: string;
+    };
+    apple?: {
+      id: string;
+      email: string;
+    };
+    facebook?: {
+      id: string;
+      email: string;
+    };
+  };
+  avatar?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  lastLogin?: Date;
+}
+
+export const validatePasswordResetToken = async (
+  token: string
+): Promise<{ valid: boolean; user?: IUser }> => {
+  try {
+    const response: any = await API.post(`/auth/password/validate/${token}`);
+    return response;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        error.error ||
+        "Token validation failed"
+    );
+  }
+};
+
+export const resetPassword = async ({
+  token,
+  password,
+}: {
+  token: string;
+  password: string;
+}): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response: any = await API.patch("/auth/password/forgot", {
+      token,
+      newPassword: password,
+    });
+    return response;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || error.message || "Password reset failed"
+    );
+  }
+};

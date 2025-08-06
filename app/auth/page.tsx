@@ -4,6 +4,7 @@ import { Eye, EyeOff, Mail, Lock, User, Shield, AlertCircle, CheckCircle, Loader
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Loading } from '@/components/LoadingComponent';
+import Link from 'next/link';
 
 interface FormData {
   name: string;
@@ -454,12 +455,12 @@ export default function AuthPage() {
             {/* Forgot password (login only) */}
             {isLogin && (
               <div className="mt-4 text-center">
-                <button
-                  type="button"
+                <Link
+                  href="/auth/forgot-password"
                   className="text-sm text-slate-500 hover:text-slate-400 transition-colors"
                 >
                   Forgot your password?
-                </button>
+                </Link>
               </div>
             )}
           </div>

@@ -211,16 +211,16 @@ const NotificationBell = () => {
       const response = await fetch(`/api/notifications?page=${pageNum}&limit=10`);
       
       if (response.ok) {
-        const data: { data: NotificationResponse } = await response.json();
-        
+        const data: NotificationResponse = await response.json();
+         
         if (append) {
-          setNotifications(prev => [...prev, ...data.data.notifications]);
+          setNotifications(prev => [...prev, ...data.notifications]);
         } else {
-          setNotifications(data.data.notifications);
+          setNotifications(data.notifications);
         }
         
-        setUnreadCount(data.data.unreadCount);
-        setHasMore(data.data.pagination.hasNextPage);
+        setUnreadCount(data.unreadCount);
+        setHasMore(data.pagination.hasNextPage);
         setPage(pageNum);
       }
     } catch (error) {

@@ -1,6 +1,6 @@
 // components/RichTextEditor.tsx
 "use client";
-
+import './texteditor.css'
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Bold,
@@ -66,12 +66,62 @@ const RichTextEditor = ({
   }, [onChange]);
 
   const executeCommand = useCallback((command: string, value?: string) => {
-    document.execCommand(command, false, value);
+    // Focus the editor first, then execute the command
     editorRef.current?.focus();
-    handleInput();
+    
+    // Use a small timeout to ensure focus is established
+    setTimeout(() => {
+      try {
+        const success = document.execCommand(command, false, value);
+        if (!success) {
+          console.warn(`Command ${command} failed`);
+        }
+        handleInput();
+      } catch (error) {
+        console.error(`Error executing command ${command}:`, error);
+      }
+    }, 10);
+  }, [handleInput]);
+
+  // Alternative list implementation for better reliability
+  const toggleList = useCallback((listType: 'ul' | 'ol') => {
+    editorRef.current?.focus();
+    
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+
+      // First try the standard command
+      const command = listType === 'ul' ? 'insertUnorderedList' : 'insertOrderedList';
+      const success = document.execCommand(command, false);
+      
+      if (!success) {
+        // Fallback: manual list creation
+        const range = selection.getRangeAt(0);
+        const selectedText = selection.toString();
+        
+        if (selectedText) {
+          // Create list with selected text
+          const listHtml = `<${listType}><li>${selectedText}</li></${listType}>`;
+          range.deleteContents();
+          range.insertNode(range.createContextualFragment(listHtml));
+        } else {
+          // Create empty list item
+          const listHtml = `<${listType}><li>&nbsp;</li></${listType}>`;
+          range.insertNode(range.createContextualFragment(listHtml));
+        }
+        
+        // Position cursor in the list item
+        selection.collapseToEnd();
+      }
+      
+      handleInput();
+    }, 10);
   }, [handleInput]);
 
   const insertHTML = useCallback((html: string) => {
+    editorRef.current?.focus();
+    
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
@@ -195,10 +245,30 @@ const RichTextEditor = ({
     const url = prompt('Enter URL:');
     if (url) {
       const text = window.getSelection()?.toString() || url;
-      const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+      const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">${text}</a>`;
       insertHTML(linkHtml);
     }
   }, [insertHTML]);
+
+  // Handle keyboard shortcuts
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key.toLowerCase()) {
+        case 'b':
+          e.preventDefault();
+          executeCommand('bold');
+          break;
+        case 'i':
+          e.preventDefault();
+          executeCommand('italic');
+          break;
+        case 'u':
+          e.preventDefault();
+          executeCommand('underline');
+          break;
+      }
+    }
+  }, [executeCommand]);
 
   const toolbarButtons = [
     { icon: Bold, command: 'bold', title: 'Bold (Ctrl+B)' },
@@ -206,8 +276,18 @@ const RichTextEditor = ({
     { icon: Underline, command: 'underline', title: 'Underline (Ctrl+U)' },
     { icon: Strikethrough, command: 'strikethrough', title: 'Strikethrough' },
     { type: 'separator' },
-    { icon: List, command: 'insertUnorderedList', title: 'Bullet List' },
-    { icon: ListOrdered, command: 'insertOrderedList', title: 'Numbered List' },
+    { 
+      icon: List, 
+      action: () => toggleList('ul'), 
+      title: 'Bullet List',
+      isListButton: true 
+    },
+    { 
+      icon: ListOrdered, 
+      action: () => toggleList('ol'), 
+      title: 'Numbered List',
+      isListButton: true 
+    },
     { type: 'separator' },
     { icon: AlignLeft, command: 'justifyLeft', title: 'Align Left' },
     { icon: AlignCenter, command: 'justifyCenter', title: 'Align Center' },
@@ -229,7 +309,7 @@ const RichTextEditor = ({
               key={index}
               type="button"
               onClick={() => button.command ? executeCommand(button.command) : button.action?.()}
-              className="p-2 hover:bg-gray-200 rounded transition-colors"
+              className="p-2 hover:bg-gray-200 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500"
               title={button.title}
             >
               {button.icon && <button.icon className="w-4 h-4" />}
@@ -239,8 +319,13 @@ const RichTextEditor = ({
         
         {/* Format Dropdown */}
         <select
-          onChange={(e) => executeCommand('formatBlock', e.target.value)}
-          className="ml-2 px-2 py-1 text-sm border border-gray-300 rounded"
+          onChange={(e) => {
+            if (e.target.value) {
+              executeCommand('formatBlock', `<${e.target.value}>`);
+              e.target.value = ''; // Reset selection
+            }
+          }}
+          className="ml-2 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
           defaultValue=""
         >
           <option value="">Format</option>
@@ -262,7 +347,8 @@ const RichTextEditor = ({
           onPaste={handlePaste}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
-          className={`w-full min-h-[200px] p-4 border-l border-r border-b border-gray-300 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none overflow-y-auto ${
+          onKeyDown={handleKeyDown}
+          className={`w-full min-h-[200px] p-4 border-l border-r border-b border-gray-300 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none overflow-y-auto editor-content ${
             error ? 'border-red-300 bg-red-50' : ''
           } ${
             isActive ? 'ring-2 ring-orange-500 border-transparent' : ''
@@ -366,6 +452,7 @@ const RichTextEditor = ({
       {/* Help text */}
       <div className="mt-2 text-xs text-gray-500 space-y-1">
         <p>• Use the toolbar buttons or keyboard shortcuts (Ctrl+B for bold, Ctrl+I for italic, etc.)</p>
+        <p>• Click the list buttons to create bullet points or numbered lists</p>
         <p>• Drag & drop images directly into the editor or paste from clipboard</p>
         <p>• Images are automatically uploaded and hosted securely</p>
       </div>
@@ -380,6 +467,8 @@ const RichTextEditor = ({
           {error}
         </motion.p>
       )}
+
+      
     </div>
   );
 };

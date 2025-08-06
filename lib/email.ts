@@ -1,7 +1,7 @@
 // @/lib/email.ts - Updated with HTML content handling
 import { Resend } from 'resend';
 import { getEnvironmentVariable } from './utils';
-import { EmailVerificationTemplate, NotifyTaskAssigned } from '@/components/EmailTemplate';
+import { EmailVerificationTemplate, NotifyTaskAssigned, PasswordResetSuccessTemplate, ResetPasswordEmailTemplate } from '@/components/EmailTemplate';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -216,6 +216,39 @@ export function containsHtml(content: string): boolean {
 export function getEmailContentPreview(htmlContent: string, maxLength: number = 200): string {
   const plainText = stripHtmlTags(htmlContent);
   return truncateText(plainText, maxLength);
+}
+
+export async function SendPWDResetEmail({token, email, name}:{token:string, email:string, name:string}){
+  const confirmationUrl = `${getEnvironmentVariable('APP_ORIGIN')}/auth/reset-password?token=${token}`;
+  const { data, error } = await resend.emails.send({
+    from: "LunaDrone <reset-password@lunadrone.com>",
+    to: [email],
+    subject: "Reset Your password",
+    react: ResetPasswordEmailTemplate({  resetUrl:confirmationUrl, username: name, }),
+    headers: {
+      'List-Unsubscribe': `<${confirmationUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+    }
+  });
+
+  if (error) throw error;
+  return data;
+}
+export async function sendPasswordChangedEmail({ email, name}:{ email:string, name:string}){
+
+  const { data, error } = await resend.emails.send({
+    from: "LunaDrone <reset-password@lunadrone.com>",
+    to: [email],
+    subject: "Password Changed Successfully",
+    react: PasswordResetSuccessTemplate({   username: name, }),
+    headers: {
+      
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+    }
+  });
+
+  if (error) throw error;
+  return data;
 }
 
 // Export utility functions for use in other parts of the application

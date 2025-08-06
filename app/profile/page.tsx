@@ -26,6 +26,7 @@ import React, { useState, useRef, useEffect } from "react";
 import image from "@/assets/passportphoto.jpg";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 const ProfilePage = () => {
   const { user, logout } = useAuth();
@@ -567,12 +568,7 @@ const ProfilePage = () => {
               </span>
             </div>
             <div className="relative">
-              <span className="bg-gradient-to-r from-orange-400 to-red-500 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center cursor-pointer hover:shadow-lg transition-all duration-200">
-                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-              </span>
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs">
-                3
-              </span>
+              <NotificationBell></NotificationBell>
             </div>
           </div>
         </div>
