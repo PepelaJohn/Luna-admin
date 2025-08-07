@@ -15,11 +15,8 @@ import {
   ChevronRight,
   MoreVertical,
   Loader2,
-  X,
-  Save,
-  AlertCircle,
-  CheckCircle,
-  Info,
+  ShieldAlert,
+
 } from "lucide-react";
 
 // shadcn/ui imports
@@ -55,8 +52,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+
 import {
   Alert,
   AlertDescription,
@@ -183,6 +179,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
       corporate: { variant: "default" as const, label: "Corporate", icon: Shield },
       normal: { variant: "secondary" as const, label: "User", icon: UserIcon },
       super_admin: { variant: "outline" as const, label: "Super Admin", icon: ShieldCheck },
+      moderator: { variant: "default" as const, label: "Moderator", icon: ShieldAlert },
     };
 
     const config = roleConfig[role];

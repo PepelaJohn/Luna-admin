@@ -19,7 +19,7 @@ const createUserSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   email: z.string().email('Invalid email format'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.enum(['normal', 'admin', 'super_admin']).default('normal'),
+  role: z.enum(['normal', 'admin', 'super_admin', 'corporate', 'moderator']).default('normal'),
   isActive: z.boolean().default(true),
   phone: z.string().optional(),
   reason: z.string().optional(), // Reason for creating the user
@@ -344,6 +344,7 @@ async function updateUserHandler(request: NextRequest) {
     // const reason = "User Requested deletion"
     
     const userId = request.url.split('/').pop()
+   
     if (!userId) {
       return returnError({
         message: 'User ID is required',

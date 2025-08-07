@@ -27,7 +27,7 @@ interface User {
   name: string;
   email: string;
   phone?: string;
-  role: "normal" | "corporate" | "admin" | "super_admin";
+  role: "normal" | "corporate" | "admin" | "super_admin" | 'moderator';
   isEmailVerified: boolean;
   isActive: boolean;
   avatar?: string;
@@ -209,6 +209,7 @@ export function EditingUserPopup(
                     <SelectContent className="bg-white">
                       <SelectItem value="normal">User</SelectItem>
                       <SelectItem value="corporate">Corporate</SelectItem>
+                      <SelectItem value="moderator">Moderator</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="super_admin">Super Admin</SelectItem>
                     </SelectContent>

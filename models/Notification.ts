@@ -92,7 +92,7 @@ const NotificationTaskSchema = new Schema<INotificationTask>({
 const NotificationSchema = new Schema<INotification>({
   type: {
     type: String,
-    enum: ['task_assigned', 'task_completed', 'task_status_changed', 'task_comment', 'task_overdue', 'task_due_soon'],
+    enum: ['task_assigned', 'task_completed', 'task_status_changed', 'task_comment', 'task_overdue', 'task_due_soon','new_message'],
     required: true
   },
   title: {
@@ -298,6 +298,30 @@ NotificationSchema.statics.createTaskStatusChangedNotification = async function(
   });
 };
 
+NotificationSchema.statics.createNewMessageNotification = async function (
+  message:string,
+  recipient: { userId: string; name: string; email: string },
+  actor: { userId: string; name: string; email: string },
+ 
+){
+    return this.create({
+      type:'new_message',
+      title:"New Message",
+      message,
+      recipient:{
+        userId:new mongoose.Types.ObjectId(recipient.userId),
+        name:recipient.name,
+        email:recipient.email
+      },
+      actor:{
+        ...actor, userId:new mongoose.Types.ObjectId(actor.userId)
+      },
+      priority:'medium',
+      metadata:message,
+      
+    })
+}
+
 // Static method to get notifications for a user
 NotificationSchema.statics.getForUser = function(
   userId: string,
@@ -350,6 +374,8 @@ NotificationSchema.statics.getUnreadCount = function(userId: string) {
     isArchived: false
   });
 };
+
+
 
 // Create and export the model
 const Notification: Model<INotification> = mongoose.models.Notification || mongoose.model<INotification>('Notification', NotificationSchema);

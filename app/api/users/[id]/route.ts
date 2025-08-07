@@ -13,7 +13,7 @@ const updateUserSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   email: z.string().email().optional(),
   password: z.string().min(6).optional(),
-  role: z.enum(['normal', 'admin', 'super_admin', 'corporate']).optional(),
+  role: z.enum(['normal', 'admin', 'super_admin', 'corporate', 'moderator']).optional(),
   isActive: z.boolean().optional(),
   phone: z.string().optional(),
   reason: z.string().optional(),
@@ -37,13 +37,14 @@ async function updateUserHandler(request: NextRequest) {
     const { ...updateData } = body;
     
     const userId = request.url.split('/').pop();
+ 
     if (!userId) {
       return returnError({
         message: 'User ID is required',
         status: 400,
       });
     }
-
+    
     const validatedData = updateUserSchema.parse(updateData);
     const { reason = "Admin requested update", password, ...userData } = validatedData;
 

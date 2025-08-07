@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   UserIcon,
   Save,
-  ArrowLeft,
   Eye,
   EyeOff,
   AlertCircle,
@@ -19,6 +18,7 @@ import {
   UserPlus,
   ShieldQuestion,
   RefreshCw,
+  ShieldAlert,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CreateUserFormData } from "@/lib/types";
@@ -250,6 +250,12 @@ const CreateUserPage: React.FC = () => {
         label: "Corporate",
         description: "Business account with extended features",
       },
+      moderator: {
+        color: "bg-yellow-100 text-blue-700 border-blue-200",
+        icon: ShieldAlert,
+        label: "Moderator",
+        description: "Normal account with elevated permissions",
+      },
       normal: {
         color: "bg-green-100 text-green-700 border-green-200",
         icon: UserIcon,
@@ -466,8 +472,8 @@ const CreateUserPage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   User Role
                 </label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {(["normal", "corporate", "admin"] as const).map((role) => {
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  {(["normal", "corporate",'moderator', "admin"] as const).map((role) => {
                     const roleInfo = getRoleInfo(role);
                     const Icon = roleInfo.icon;
                     

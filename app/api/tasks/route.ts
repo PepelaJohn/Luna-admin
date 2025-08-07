@@ -240,7 +240,7 @@ const createTask = async (request: NextRequest) => {
       assigneeRole: string
     ): boolean => {
       if (assignerRole === "super_admin") return true;
-      if (assignerRole === "admin" && assigneeRole === "admin") return true;
+      if (assignerRole === "admin" && assigneeRole !== "super_admin") return true;
       return false;
     };
 

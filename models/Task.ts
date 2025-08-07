@@ -78,7 +78,7 @@ const UserRefSchema = new Schema<IUserRef>({
   },
   role: {
     type: String,
-    enum: ['admin', 'super_admin'],
+    enum: ['admin', 'super_admin', "moderator"],
     required: true
   }
 }, { _id: false });

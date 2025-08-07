@@ -25,13 +25,14 @@ const getAssignableUsers = async (request: NextRequest) => {
     // Build query based on user role and permissions
     let query: any = {
       _id: { $ne: user.id }, // Exclude current user
-      role: { $in: ['admin', 'super_admin'] }, // Only admin users can be assigned tasks
-      isActive: true // Only active users
+      role: { $in: ['admin', 'super_admin', 'moderator'] }, // Only admin users can be assigned tasks
+      isActive: true, // Only active users
+      isEmailVerified:true
     };
 
     // If current user is admin (not super_admin), they can only assign to other admins
     if (user.role === 'admin') {
-      query.role = 'admin';
+      query.role = { $in: ['admin', 'moderator'] };
     }
 
     // Add search functionality
