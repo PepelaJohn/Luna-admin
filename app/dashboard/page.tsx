@@ -5,7 +5,7 @@ import StatsGrid from "@/components/admin/StatsGrid";
 import SubscribersTable from "@/components/admin/SubscribersTable";
 import UsersTable from "@/components/admin/UserTable";
 import { Loading } from "@/components/LoadingComponent";
-import { useData } from "@/hooks/useData";
+
 import { useLogs } from "@/hooks/useLogs";
 import { usePartnerStats } from "@/hooks/usePartnersStats";
 import { useSubscribers } from "@/hooks/useSubscribers";
@@ -14,7 +14,7 @@ import React from "react";
 // import { Loading } from "./logs/page";
 
 const DashBoardHomepage = () => {
-  const { users, loading } = useData();
+  
   const {  totalSubs } = useSubscribers();
   const { logs } = useLogs();
   const {stats, loading:statsLoading} = usePartnerStats()
@@ -61,7 +61,7 @@ const DashBoardHomepage = () => {
 
         <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold mb-4">Recent Users</h3>
-        {  loading ? <Loading></Loading> : <UsersTable users={users?.slice(0, 5) || []} isCompact />}
+        <UsersTable  isCompact />
         </div>
       </div>
 
