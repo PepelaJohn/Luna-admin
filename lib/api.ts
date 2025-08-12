@@ -218,11 +218,33 @@ interface Pagination {
   limit: number;
   total: number;
   pages: number;
+  hasNext:boolean;
+  hasPrev:boolean;
 }
 
 export const usersApi = {
-  getUsers: async (role?: string): Promise<UsersResponse> => {
-    const response = await API.get(`/users?role=${role}`);
+  getUsers: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    role?: string;
+    isActive?: string;
+    isEmailVerified?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<UsersResponse> => {
+
+    const queryParams = new URLSearchParams();
+      
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            queryParams.append(key, value.toString());
+          }
+        });
+      }
+    const queryString = queryParams.toString();
+    const response = await API.get(`/users${queryString ? `?${queryString}` : ''}`);
     if (response?.data?.success) {
       return response.data;
     } else {

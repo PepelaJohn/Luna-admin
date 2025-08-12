@@ -113,12 +113,12 @@ const CommentItem = ({ comment, isOwn = false }: { comment: IComment; isOwn?: bo
     <div className={`max-w-lg ${isOwn ? 'order-2' : 'order-1'}`}>
       <div className={`rounded-lg p-4 ${
         isOwn 
-          ? 'bg-blue-600 text-white' 
-          : 'bg-white border border-gray-200'
+         ? 'bg-blue-100 rounded-r-xl rounded-tl-xl border-blue-200' 
+        : 'bg-gray-50 rounded-l-xl rounded-tr-xl border-gray-200'
       }`}>
         <div className={`flex items-center gap-2 mb-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-          <span className={`text-sm font-medium ${isOwn ? 'text-blue-100' : 'text-gray-900'}`}>
-            {comment.userName}
+          <span className={`text-xs capitalize font-medium ${isOwn ? 'text-blue-100' : 'text-gray-900'}`}>
+            { isOwn ? "You": comment.userName}
           </span>
           <span className={`text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>
             {new Date(comment.createdAt).toLocaleString()}

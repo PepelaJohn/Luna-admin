@@ -26,6 +26,8 @@ export interface Pagination {
   limit: number;
   total: number;
   pages: number;
+  hasNext:boolean;
+  hasPrev:boolean;
 }
 
 export interface User {

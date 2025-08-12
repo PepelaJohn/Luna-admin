@@ -1,13 +1,12 @@
 "use client";
 import UsersTable from "@/components/admin/UserTable";
-import { useData } from "@/hooks/useData";
 import Link from "next/link";
 import React from "react";
 import { Plus } from "lucide-react";
-import { Loading } from "@/components/LoadingComponent";
+
 
 const Subs = () => {
-  const { users, pagination, loading } = useData();
+ 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="p-4 lg:p-6 border-b flex border-gray-200">
@@ -28,19 +27,12 @@ const Subs = () => {
           </Link>
         </div>
       </div>
-      {loading ? (
-        <Loading></Loading>
-      ) : (
+      
         <UsersTable
-          users={users || []}
-          pagination={pagination}
-          onPageChange={(page: number) => {
-            // Call your getUsers function with the new page
-            // getUsers();
-          }}
+          
         
         />
-      )}
+    
     </div>
   );
 };

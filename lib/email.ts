@@ -203,6 +203,7 @@ export async function notifyMultipleUsers(notifications: Array<{
   return { successful, failed };
 }
 
+
 // Utility function to validate if content contains HTML
 export function containsHtml(content: string): boolean {
   if (!content) return false;
@@ -212,12 +213,15 @@ export function containsHtml(content: string): boolean {
   return htmlTagRegex.test(content);
 }
 
+
 // Utility function to get content preview for emails
 export function getEmailContentPreview(htmlContent: string, maxLength: number = 200): string {
   const plainText = stripHtmlTags(htmlContent);
   return truncateText(plainText, maxLength);
 }
 
+
+// 
 export async function SendPWDResetEmail({token, email, name}:{token:string, email:string, name:string}){
   const confirmationUrl = `${getEnvironmentVariable('APP_ORIGIN')}/auth/reset-password?token=${token}`;
   const { data, error } = await resend.emails.send({
@@ -234,6 +238,8 @@ export async function SendPWDResetEmail({token, email, name}:{token:string, emai
   if (error) throw error;
   return data;
 }
+
+
 export async function sendPasswordChangedEmail({ email, name}:{ email:string, name:string}){
 
   const { data, error } = await resend.emails.send({

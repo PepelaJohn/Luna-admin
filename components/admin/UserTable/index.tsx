@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import {
   User as UserIcon,
   Mail,
@@ -16,7 +16,7 @@ import {
   MoreVertical,
   Loader2,
   ShieldAlert,
-
+  RefreshCw,
 } from "lucide-react";
 
 // shadcn/ui imports
@@ -51,43 +51,23 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Alert,
   AlertDescription,
 } from "@/components/ui/alert";
-import { usersApi } from "@/lib/api";
 import { EditingUserPopup } from "./EditingUserPopup";
 import { Loading } from "@/components/LoadingComponent";
 
-// Mock types - replace with your actual types
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  role: "normal" | "corporate" | "admin" | "super_admin";
-  isEmailVerified: boolean;
-  isActive: boolean;
-  avatar?: string;
-  createdAt: string;
-  lastLogin?: Date;
-}
+import { User } from "@/lib/types";
+import { useData } from "@/hooks/useData";
 
-interface Pagination {
-  page: number;
-  pages: number;
-  limit: number;
-  total: number;
-}
-
+// Types
 interface UsersTableProps {
-  users: User[];
-  pagination?: Pagination;
   isCompact?: boolean;
-  onPageChange?: (page: number) => void;
+  initialLimit?: number;
   onUserUpdate?: (userId: string, updates: Partial<User>) => void;
+  onUserDelete?: (userId: string) => void;
 }
 
 export interface FormErrors {
@@ -97,45 +77,60 @@ export interface FormErrors {
   general?: string;
 }
 
-// Mock data for demonstration
-
-
-const mockPagination: Pagination = {
-  page: 1,
-  pages: 3,
-  limit: 10,
-  total: 25,
-};
-
 const UsersTable: React.FC<UsersTableProps> = ({
-  users ,
-  pagination = mockPagination,
   isCompact = false,
-  onPageChange,
- 
+  initialLimit = 10,
+  onUserUpdate,
+  onUserDelete,
 }) => {
+  // Use the custom hook for data management
+  const {
+    users,
+    pagination,
+    loading,
+    error,
+    currentFilters,
+    setPage,
+    setFilters,
+    refresh,
+    deleteUser,
+    updateUser,
+  } = useData({
+    limit: initialLimit,
+    autoFetch: true,
+  });
+
+  // Local state for UI interactions
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  
+  // Edit/Delete states
   const [deleting, setDeleting] = useState({ status: false, id: "" });
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<User>>({});
   const [originalFormData, setOriginalFormData] = useState<Partial<User>>({});
-  const [loading, setLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [successMessage, setSuccessMessage] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
 
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      const matchesSearch =
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase());
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-      const matchesRole = roleFilter === "all" || user.role === roleFilter;
-
-      return matchesSearch && matchesRole;
-    });
-  }, [users, searchTerm, roleFilter]);
+  // Update filters when search or role changes
+  useEffect(() => {
+    const newFilters = {
+      search: debouncedSearch,
+      role: roleFilter !== "all" ? roleFilter : undefined,
+    };
+    setFilters(newFilters);
+  }, [debouncedSearch, roleFilter, setFilters]);
 
   // Check for changes in form data
   useEffect(() => {
@@ -150,6 +145,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
     setHasChanges(changes);
   }, [editFormData, originalFormData, editingUser]);
 
+  // Validation
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
 
@@ -173,6 +169,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
     return Object.keys(errors).length === 0;
   };
 
+  // Helper functions
   const getRoleBadge = (role: User["role"]) => {
     const roleConfig = {
       admin: { variant: "destructive" as const, label: "Admin", icon: ShieldCheck },
@@ -209,20 +206,22 @@ const UsersTable: React.FC<UsersTableProps> = ({
     });
   };
 
+  // Event handlers
   const handleDeleteUser = async (userId: string) => {
-    setLoading(true);
+    setEditLoading(true);
     try {
-      
-      const response = await usersApi.deleteUser(deleting.id)
-      if(response.success){
-
+      const result = await deleteUser(userId);
+      if (result.success) {
         setDeleting({ status: false, id: "" });
+        if (onUserDelete) {
+          onUserDelete(userId);
+        }
       }
     } catch (error) {
       console.error("Delete failed:", error);
     } finally {
-      setLoading(false);
-        setDeleting({ status: false, id: "" });
+      setEditLoading(false);
+      setDeleting({ status: false, id: "" });
     }
   };
 
@@ -246,32 +245,29 @@ const UsersTable: React.FC<UsersTableProps> = ({
   const handleSaveEdit = async () => {
     if (!editingUser) return;
 
-    // Clear previous messages
     setFormErrors({});
     setSuccessMessage("");
 
-    // Check if there are any changes
     if (!hasChanges) {
       setFormErrors({ general: "No changes detected. Please modify at least one field before saving." });
       return;
     }
 
-    // Validate form
     if (!validateForm()) {
       return;
     }
 
-    setLoading(true);
+    setEditLoading(true);
     try {
-      const response = await usersApi.updateUser({
-        id: editingUser._id, 
-        updateUserData: editFormData
-      });
+      const result = await updateUser(editingUser._id, editFormData);
       
-      
-      if (response.success) {
-        setSuccessMessage(response.message || "User updated successfully!");
-        // Close modal after 1.5 seconds to show success message
+      if (result.success) {
+        setSuccessMessage(result.message || "User updated successfully!");
+        
+        if (onUserUpdate) {
+          onUserUpdate(editingUser._id, editFormData);
+        }
+        
         setTimeout(() => {
           setEditingUser(null);
           setEditFormData({});
@@ -279,15 +275,15 @@ const UsersTable: React.FC<UsersTableProps> = ({
           setSuccessMessage("");
         }, 1500);
       } else {
-        setFormErrors({ general: response.message || "Failed to update user. Please try again." });
+        setFormErrors({ general: result.error || "Failed to update user. Please try again." });
       }
     } catch (error: any) {
       console.error("Update failed:", error);
       setFormErrors({ 
-        general: error?.response?.data?.message || "An error occurred while updating the user. Please try again." 
+        general: "An error occurred while updating the user. Please try again." 
       });
     } finally {
-      setLoading(false);
+      setEditLoading(false);
     }
   };
 
@@ -302,11 +298,9 @@ const UsersTable: React.FC<UsersTableProps> = ({
 
   const handleInputChange = (field: keyof User, value: any) => {
     setEditFormData({ ...editFormData, [field]: value });
-    // Clear field-specific error when user starts typing
     if (formErrors[field as keyof FormErrors]) {
       setFormErrors({ ...formErrors, [field]: undefined });
     }
-    // Clear general error when user makes changes
     if (formErrors.general) {
       setFormErrors({ ...formErrors, general: undefined });
     }
@@ -391,56 +385,70 @@ const UsersTable: React.FC<UsersTableProps> = ({
     </Card>
   );
 
+  // Compact view for dashboard
   if (isCompact) {
     return (
       <>
-      {
-        loading ? <Loading></Loading>:<div className="space-y-3">
-        {filteredUsers.slice(0, 5).map((user) => (
-          <div
-            key={user._id}
-            className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                {user.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="text-white font-medium text-sm">
-                    {user.name.charAt(0).toUpperCase()}
-                  </span>
-                )}
+        {loading ? (
+          <Loading />
+        ) : (
+          <div className="space-y-3">
+            {users?.slice(0, 5).map((user) => (
+              <div
+                key={user._id}
+                className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-white font-medium text-sm">
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex justify-center flex-col">
+                    <p className="font-medium text-gray-900 text-sm">{user.name}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                    <p className="text-[10px] capitalize text-gray-500">{user.role}</p>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-center  flex-col">
-                <p className="font-medium text-gray-900 text-sm">{user.name}</p>
-                <p className="text-xs text-gray-500">{user.email}</p>
-                <p className="text-[10px] capitalize text-gray-500">{user.role}</p>
+            ))}
+            {(pagination?.total || 0) > 5 && (
+              <div className="text-center py-2">
+                <p className="text-sm text-gray-500">
+                  +{(pagination?.total || 0) - 5} more users
+                </p>
               </div>
-            </div>
-            
-          </div>
-        ))}
-        {filteredUsers.length > 5 && (
-          <div className="text-center py-2">
-            <p className="text-sm text-gray-500">
-              +{filteredUsers.length - 5} more users
-            </p>
+            )}
           </div>
         )}
-      </div>
-      }
       </>
     );
   }
 
   return (
     <div className="space-y-4 bg-transparent">
+      {/* Error Alert */}
+      {error && (
+        <Alert className="border-red-200 bg-red-50">
+          <AlertDescription className="text-red-800">
+            {error}
+            <Button variant="link" className="ml-2 p-0 h-auto text-red-600" onClick={refresh}>
+              Try again
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Delete Confirmation Dialog */}
-      <Dialog  open={deleting.status} onOpenChange={(open) => !open && setDeleting({ status: false, id: "" })}>
+      <Dialog open={deleting.status} onOpenChange={(open) => !open && setDeleting({ status: false, id: "" })}>
         <DialogContent className="bg-white">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
@@ -455,7 +463,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
             <Button
               variant="outline"
               onClick={() => setDeleting({ status: false, id: "" })}
-              disabled={loading}
+              disabled={editLoading}
             >
               Cancel
             </Button>
@@ -463,43 +471,57 @@ const UsersTable: React.FC<UsersTableProps> = ({
               variant="destructive"
               className="border border-red-500 cursor-pointer text-red-500"
               onClick={() => handleDeleteUser(deleting.id)}
-              disabled={loading}
+              disabled={editLoading}
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {editLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Delete
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {EditingUserPopup(editingUser, handleCancelEdit, successMessage, formErrors, formatDate, editFormData, handleInputChange, hasChanges, loading, handleSaveEdit)}
+      {EditingUserPopup(editingUser, handleCancelEdit, successMessage, formErrors, formatDate, editFormData, handleInputChange, hasChanges, editLoading, handleSaveEdit)}
 
       {/* Search and Filter Bar */}
       <Card className="!border-none bg-red-40 rounded-none">
-        <CardContent className="p- !border-none ">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <CardContent className="p-4 !border-none">
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
             <div className="flex-1 !border-none relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder="Search users by name or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-gray-200 focus:border-gray-200 "
+                className="pl-10 border-gray-200 focus:border-gray-200"
               />
             </div>
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 z-10" />
-              <Select  value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-full sm:w-[180px] pl-10 border-gray-200">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="normal">Users</SelectItem>
-                  <SelectItem value="corporate">Corporate</SelectItem>
-                  <SelectItem value="admin">Admins</SelectItem>
-                </SelectContent>
-              </Select>
+            
+            <div className="flex gap-2 items-center">
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 z-10" />
+                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px] pl-10 border-gray-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="normal">Users</SelectItem>
+                    <SelectItem value="corporate">Corporate</SelectItem>
+                    <SelectItem value="admin">Admins</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refresh}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -507,128 +529,137 @@ const UsersTable: React.FC<UsersTableProps> = ({
 
       {/* Mobile View - Cards */}
       <div className="block md:hidden">
-        {filteredUsers.map((user) => (
-          <MobileUserCard  key={user._id} user={user} />
-        ))}
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin" />
+          </div>
+        ) : (
+          users?.map((user) => <MobileUserCard key={user._id} user={user} />)
+        )}
       </div>
 
       {/* Desktop View - Table */}
       <div className="hidden md:block">
         <Card className="border-gray-200 rounded-none">
-          <Table>
-            <TableHeader className="border-gray-200 rounded-none">
-              <TableRow className="border-gray-200 border-none">
-                <TableHead>User</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead>Last Login</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow className="border-gray-200" key={user._id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        {user.avatar ? (
-                          <img
-                            src={user.avatar}
-                            alt={user.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-white font-medium">
-                            {user.name.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-900 truncate">
-                          {user.name}
-                        </p>
-                        <p className="text-sm text-gray-500 truncate">
-                          {user.email}
-                        </p>
-                        {!user.isActive && (
-                          <span className="text-xs text-red-600 font-medium">
-                            Inactive
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{getRoleBadge(user.role)}</TableCell>
-                  <TableCell>{getVerificationStatus(user.isEmailVerified)}</TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Mail className="w-3 h-3" />
-                        <span className="truncate max-w-[200px]">{user.email}</span>
-                      </div>
-                      {user.phone && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Phone className="w-3 h-3" />
-                          <span>{user.phone}</span>
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="w-3 h-3" />
-                      {formatDate(user.createdAt)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-gray-600">
-                      {user.lastLogin
-                        ? formatDate(user.lastLogin.toString())
-                        : "Never"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleEditUser(user)}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-white border !cursor-pointer shadow-lg border-gray-300" align="end">
-                          <DropdownMenuItem 
-                          
-                            onClick={() => setDeleting({ status: true, id: user._id })}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete User
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader className="border-gray-200 rounded-none">
+                <TableRow className="border-gray-200 border-none">
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead>Last Login</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users?.map((user) => (
+                  <TableRow className="border-gray-200" key={user._id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          {user.avatar ? (
+                            <img
+                              src={user.avatar}
+                              alt={user.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-white font-medium">
+                              {user.name.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 truncate">
+                            {user.name}
+                          </p>
+                          <p className="text-sm text-gray-500 truncate">
+                            {user.email}
+                          </p>
+                          {!user.isActive && (
+                            <span className="text-xs text-red-600 font-medium">
+                              Inactive
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getRoleBadge(user.role)}</TableCell>
+                    <TableCell>{getVerificationStatus(user.isEmailVerified)}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Mail className="w-3 h-3" />
+                          <span className="truncate max-w-[200px]">{user.email}</span>
+                        </div>
+                        {user.phone && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Phone className="w-3 h-3" />
+                            <span>{user.phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Calendar className="w-3 h-3" />
+                        {formatDate(user.createdAt)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-600">
+                        {user.lastLogin
+                          ? formatDate(user.lastLogin.toString())
+                          : "Never"}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="sm">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditUser(user)}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="bg-white border !cursor-pointer shadow-lg border-gray-300" align="end">
+                            <DropdownMenuItem 
+                              onClick={() => setDeleting({ status: true, id: user._id })}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete User
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </Card>
       </div>
 
       {/* Empty State */}
-      {filteredUsers.length === 0 && (
+      {!loading && (!users || users.length === 0) && (
         <Card>
           <CardContent className="text-center py-12">
             <UserIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -645,9 +676,9 @@ const UsersTable: React.FC<UsersTableProps> = ({
       )}
 
       {/* Pagination */}
-      {pagination && pagination.pages > 1 && (
-        <Card>
-          <CardContent className="p-4">
+      {!loading && pagination && pagination.pages > 1 && (
+        <Card className="!border-none !outline-none">
+          <CardContent className="p-4 ">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-sm text-gray-600">
                 Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
@@ -657,10 +688,11 @@ const UsersTable: React.FC<UsersTableProps> = ({
 
               <div className="flex items-center gap-2">
                 <Button
+                className="cursor-pointer"
                   variant="outline"
                   size="sm"
-                  onClick={() => onPageChange && onPageChange(pagination.page - 1)}
-                  disabled={pagination.page <= 1}
+                  onClick={() => setPage(pagination.page - 1)}
+                  disabled={!pagination.hasPrev || loading}
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
@@ -681,8 +713,9 @@ const UsersTable: React.FC<UsersTableProps> = ({
                         key={pageNum}
                         variant={pagination.page === pageNum ? "default" : "outline"}
                         size="sm"
-                        onClick={() => onPageChange && onPageChange(pageNum)}
+                        onClick={() => setPage(pageNum)}
                         className="w-8 h-8 p-0"
+                        disabled={loading}
                       >
                         {pageNum}
                       </Button>
@@ -691,10 +724,11 @@ const UsersTable: React.FC<UsersTableProps> = ({
                 </div>
 
                 <Button
+                className="cursor-pointer"
                   variant="outline"
                   size="sm"
-                  onClick={() => onPageChange && onPageChange(pagination.page + 1)}
-                  disabled={pagination.page >= pagination.pages}
+                  onClick={() => setPage(pagination.page + 1)}
+                  disabled={!pagination.hasNext || loading}
                 >
                   <ChevronRight className="w-4 h-4" />
                 </Button>
@@ -708,4 +742,3 @@ const UsersTable: React.FC<UsersTableProps> = ({
 };
 
 export default UsersTable;
-

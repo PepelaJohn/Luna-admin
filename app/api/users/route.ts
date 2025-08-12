@@ -13,7 +13,16 @@ import { timeFromNow } from '@/utils/date';
 import { sendConfirmationStartupEmail } from '@/lib/email';
 
 // Validation schemas
-
+const getUsersSchema = z.object({
+  page: z.string().transform(val => parseInt(val, 10)).refine(val => val > 0).default('1'),
+  limit: z.string().transform(val => parseInt(val, 10)).refine(val => val > 0 && val <= 100).default('10'),
+  search: z.string().optional(),
+  role: z.enum(['normal', 'admin', 'super_admin', 'corporate', 'moderator', 'all']).default('all'),
+  sortBy: z.enum(['name', 'email', 'createdAt', 'lastLogin']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  isActive: z.enum(['true', 'false', 'all']).default('all'),
+  isEmailVerified: z.enum(['true', 'false', 'all']).default('all'),
+});
 
 const createUserSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -57,21 +66,66 @@ async function getUsersHandler(request: NextRequest) {
     await connectDB();
     
     const url = new URL(request.url);
-    // const queryParams = Object.fromEntries(url.searchParams.entries());
-    // const validatedParams = getUsersSchema.parse(queryParams);
+    const queryParams = Object.fromEntries(url.searchParams.entries());
+    const validatedParams = getUsersSchema.parse(queryParams);
     
- 
-   
-    // Get total count for pagination
-    const total = await User.countDocuments();
+    const {
+      page,
+      limit,
+      search,
+      role,
+      sortBy,
+      sortOrder,
+      isActive,
+      isEmailVerified
+    } = validatedParams;
+
+    // Build filter query
+    const filter: any = {};
+
+    // Search filter
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Role filter
+    if (role !== 'all') {
+      filter.role = role;
+    }
+
+    // Active status filter
+    if (isActive !== 'all') {
+      filter.isActive = isActive === 'true';
+    }
+
+    // Email verification filter
+    if (isEmailVerified !== 'all') {
+      filter.isEmailVerified = isEmailVerified === 'true';
+    }
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+
+    // Build sort object
+    const sort: any = {};
+    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    // Get total count for pagination (with filters applied)
+    const total = await User.countDocuments(filter);
     
-    // Get users
-    const users = await User.find()
-      .select('-password')
-      .limit(10)
-     
-      .sort('-1')
-   
+    // Calculate total pages
+    const pages = Math.ceil(total / limit);
+
+    // Get users with pagination and filters
+    const users = await User.find(filter)
+      .select('-password') // Exclude password field
+      .skip(skip)
+      .limit(limit)
+      .sort(sort)
+      .lean(); // Use lean() for better performance
 
     
 
@@ -79,16 +133,27 @@ async function getUsersHandler(request: NextRequest) {
       data: {
         users,
         pagination: {
-          page:1,
-          limit:10,
+          page,
+          limit,
           total,
-      
+          pages,
+          hasNext: page < pages,
+          hasPrev: page > 1
         },
-       
+        filters: {
+          search,
+          role,
+          isActive,
+          isEmailVerified,
+          sortBy,
+          sortOrder
+        }
       },
       message: 'Users retrieved successfully'
     });
   } catch (error: any) {
+   
+    
     if (error.name === 'ZodError') {
       return returnError({
         message: 'Invalid query parameters',
@@ -104,6 +169,8 @@ async function getUsersHandler(request: NextRequest) {
     });
   }
 }
+
+
 
 // POST - Create new user
 async function createUserHandler(request: NextRequest) {
