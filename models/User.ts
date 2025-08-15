@@ -8,6 +8,7 @@ export interface IUser extends Document {
   role: "normal" | "corporate" | "admin" | "super_admin" | 'moderator';
   isEmailVerified: boolean;
   isActive: boolean;
+  _id:string;
   providers: {
     google?: {
       id: string;

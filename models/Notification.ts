@@ -1,14 +1,19 @@
 // models/Notification.ts
 import mongoose, { Document, Schema, Model } from 'mongoose';
 
-// Notification types
 export type NotificationType = 
-  | 'task_assigned'      // When a task is assigned to you
-  | 'task_completed'     // When a task you assigned is completed
-  | 'task_status_changed' // When task status changes
-  | 'task_comment'       // When someone comments on a task
-  | 'task_overdue'       // When a task becomes overdue
-  | 'task_due_soon';     // When a task is due soon
+  | 'task_assigned'      
+  | 'task_completed'     
+  | 'task_status_changed' 
+  | 'task_comment'       
+  | 'task_overdue'       
+  | 'task_due_soon'
+  | 'role_changed'       // When user role is changed
+  | 'login_alert'        // Suspicious login activity
+  | 'security_alert'     // Security-related notifications
+  | 'account_update'     // Account settings changes
+  | 'system_announcement' // System-wide announcements
+  | 'new_message';       // 
 
 // Interface for User reference in notifications
 export interface INotificationUser {
@@ -92,7 +97,12 @@ const NotificationTaskSchema = new Schema<INotificationTask>({
 const NotificationSchema = new Schema<INotification>({
   type: {
     type: String,
-    enum: ['task_assigned', 'task_completed', 'task_status_changed', 'task_comment', 'task_overdue', 'task_due_soon','new_message'],
+    enum: [
+      'task_assigned', 'task_completed', 'task_status_changed', 
+      'task_comment', 'task_overdue', 'task_due_soon', 'new_message',
+      'role_changed', 'login_alert', 'security_alert', 
+      'account_update', 'system_announcement'
+    ],
     required: true
   },
   title: {
