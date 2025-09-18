@@ -162,3 +162,59 @@ The system is fully responsive with breakpoints for:
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+give me all the files and apply the light theme mode i said .
+app/
+├── dashboard/
+│   └── expenditure/
+│       ├── page.tsx                 # Main dashboard (now with income + expenses)
+│       ├── loading.tsx
+│       ├── income/                   # NEW: Income section
+│       │   ├── page.tsx             # Income management
+│       │   ├── create/
+│       │   │   └── page.tsx         # Create income
+│       │   └── [id]/
+│       │       ├── page.tsx         # Income detail
+│       │       └── edit/
+│       │           └── page.tsx     # Edit income
+│       ├── expenses/                # RENAMED: From create/ to expenses/
+│       │   ├── page.tsx             # Expenditure management
+│       │   ├── create/
+│       │   │   └── page.tsx         # Create expenditure
+│       │   └── [id]/
+│       │       ├── page.tsx         # Expenditure detail
+│       │       └── edit/
+│       │           └── page.tsx     # Edit expenditure
+│       └── approval/
+│           └── page.tsx             # Approval workflow
+
+components/
+└── expenditure/                     # ALL COMPONENTS STAY HERE
+    ├── ExpenseTable.tsx             # Updated to handle both
+    ├── ExpenseForm.tsx              # Updated for file uploads
+    ├── StatusBadge.tsx
+    ├── BudgetChart.tsx
+    ├── ExpenseFilterPanel.tsx
+    ├── ExpenseStats.tsx
+    ├── FinancialStats.tsx           # NEW: Combined stats
+    ├── BalanceChart.tsx             # NEW: Income vs expenses
+    ├── FileUpload.tsx               # NEW: File upload component
+    ├── BudgetWarningModal.tsx       # NEW: Budget exceed warning
+    └── TabsNavigation.tsx           # NEW: Tab navigation
+
+types/
+└── expenditure.ts                   # UPDATED: Added income types
+
+lib/
+└── expenditure.ts                   # UPDATED: Added income functions

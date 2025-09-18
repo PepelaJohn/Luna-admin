@@ -13,44 +13,45 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  DollarSign
+  DollarSign,
+  TrendingUp
 } from "lucide-react";
-import { Expense } from "@/types/expenditure";
+import { FinancialRecord } from "@/types/expenditure";
 import StatusBadge from "@/components/expenditure/StatusBadge";
-import { getExpense, updateExpenseStatus } from "@/lib/expenditure";
+import { getFinancialRecord, updateRecordStatus } from "@/lib/expenditure";
 
-export default function ExpenseDetailPage() {
+export default function IncomeDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
   
-  const [expense, setExpense] = useState<Expense | null>(null);
+  const [record, setRecord] = useState<FinancialRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    loadExpense();
+    loadRecord();
   }, [id]);
 
-  const loadExpense = async () => {
+  const loadRecord = async () => {
     try {
       setIsLoading(true);
-      const expenseData = await getExpense(id);
-      setExpense(expenseData);
+      const recordData = await getFinancialRecord(id);
+      setRecord(recordData);
     } catch (error) {
-      console.error("Failed to load expense:", error);
+      console.error("Failed to load record:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleStatusUpdate = async (newStatus: Expense['status']) => {
-    if (!expense) return;
+  const handleStatusUpdate = async (newStatus: FinancialRecord['status']) => {
+    if (!record) return;
     
     try {
       setIsUpdating(true);
-      await updateExpenseStatus(expense.id, newStatus);
-      await loadExpense(); // Reload the expense data
+      await updateRecordStatus(record.id, newStatus);
+      await loadRecord(); // Reload the record data
     } catch (error) {
       console.error("Failed to update status:", error);
     } finally {
@@ -78,21 +79,21 @@ export default function ExpenseDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
       </div>
     );
   }
 
-  if (!expense) {
+  if (!record) {
     return (
       <div className="text-center py-12">
-        <h1 className="text-2xl font-bold text-white mb-4">Expense Not Found</h1>
-        <p className="text-slate-400 mb-6">The expense you're looking for doesn't exist.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Income Record Not Found</h1>
+        <p className="text-gray-600 mb-6">The income record you're looking for doesn't exist.</p>
         <Link 
-          href="/dashboard/expenditure"
-          className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg hover:from-yellow-500 hover:to-orange-600 transition-all"
+          href="/dashboard/expenditure/income"
+          className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all"
         >
-          Back to Expenses
+          Back to Income
         </Link>
       </div>
     );
@@ -103,18 +104,18 @@ export default function ExpenseDetailPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link
-          href="/dashboard/expenditure"
-          className="p-2 text-slate-400 hover:text-orange-400 hover:bg-slate-700 rounded-lg transition-colors"
+          href="/dashboard/expenditure/income"
+          className="p-2 text-gray-400 hover:text-green-400 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft size={20} />
         </Link>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-white">{expense.title}</h1>
-          <p className="text-slate-400 mt-1">{expense.description}</p>
+          <h1 className="text-3xl font-bold text-gray-900">{record.title}</h1>
+          <p className="text-gray-600 mt-1">{record.description}</p>
         </div>
         <Link
-          href={`/dashboard/expenditure/${expense.id}/edit`}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+          href={`/dashboard/expenditure/income/${record.id}/edit`}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
         >
           <Edit size={18} />
           Edit
@@ -124,97 +125,97 @@ export default function ExpenseDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Expense Details Card */}
-          <div className="bg-slate-800 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Expense Details</h2>
+          {/* Income Details Card */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Income Details</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex items-center gap-2 text-gray-600">
                   <DollarSign size={16} />
                   <span className="text-sm">Amount</span>
                 </div>
-                <p className="text-2xl font-bold text-white">
-                  {formatCurrency(expense.amount, expense.currency)}
+                <p className="text-2xl font-bold text-green-600">
+                  {formatCurrency(record.amount, record.currency)}
                 </p>
               </div>
               
               <div className="space-y-1">
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex items-center gap-2 text-gray-600">
                   <FileText size={16} />
                   <span className="text-sm">Category</span>
                 </div>
-                <p className="text-lg font-medium text-white">{expense.category}</p>
+                <p className="text-lg font-medium text-gray-900">{record.category}</p>
               </div>
               
               <div className="space-y-1">
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex items-center gap-2 text-gray-600">
                   <Calendar size={16} />
-                  <span className="text-sm">Date Incurred</span>
+                  <span className="text-sm">Date Received</span>
                 </div>
-                <p className="text-white">{formatDate(expense.dateIncurred)}</p>
+                <p className="text-gray-900">{formatDate(record.date)}</p>
               </div>
               
               <div className="space-y-1">
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex items-center gap-2 text-gray-600">
                   <User size={16} />
                   <span className="text-sm">Submitted By</span>
                 </div>
-                <p className="text-white">{expense.submittedBy}</p>
+                <p className="text-gray-900">{record.submittedBy}</p>
               </div>
               
-              {expense.approvedBy && (
+              {record.approvedBy && (
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-slate-400">
+                  <div className="flex items-center gap-2 text-gray-600">
                     <CheckCircle size={16} />
                     <span className="text-sm">Approved By</span>
                   </div>
-                  <p className="text-white">{expense.approvedBy}</p>
+                  <p className="text-gray-900">{record.approvedBy}</p>
                 </div>
               )}
               
-              {expense.dateApproved && (
+              {record.dateApproved && (
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-slate-400">
+                  <div className="flex items-center gap-2 text-gray-600">
                     <Clock size={16} />
                     <span className="text-sm">Date Approved</span>
                   </div>
-                  <p className="text-white">{formatDate(expense.dateApproved)}</p>
+                  <p className="text-gray-900">{formatDate(record.dateApproved)}</p>
                 </div>
               )}
               
-              {expense.datePaid && (
+              {record.datePaid && (
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-slate-400">
+                  <div className="flex items-center gap-2 text-gray-600">
                     <Clock size={16} />
-                    <span className="text-sm">Date Paid</span>
+                    <span className="text-sm">Date Recorded</span>
                   </div>
-                  <p className="text-white">{formatDate(expense.datePaid)}</p>
+                  <p className="text-gray-900">{formatDate(record.datePaid)}</p>
                 </div>
               )}
             </div>
             
-            {expense.notes && (
-              <div className="mt-6 pt-6 border-t border-slate-700">
-                <h3 className="text-lg font-medium text-white mb-2">Notes</h3>
-                <p className="text-slate-300">{expense.notes}</p>
+            {record.notes && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Notes</h3>
+                <p className="text-gray-600">{record.notes}</p>
               </div>
             )}
           </div>
 
           {/* Status History Card */}
-          <div className="bg-slate-800 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Status History</h2>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Status History</h2>
             
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-slate-700 rounded-lg">
-                    <Clock size={16} className="text-slate-400" />
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <Clock size={16} className="text-gray-600" />
                   </div>
                   <div>
-                    <p className="text-white">Created</p>
-                    <p className="text-sm text-slate-400">{formatDate(expense.createdAt)}</p>
+                    <p className="text-gray-900">Created</p>
+                    <p className="text-sm text-gray-600">{formatDate(record.createdAt)}</p>
                   </div>
                 </div>
                 <StatusBadge status="draft" />
@@ -222,41 +223,41 @@ export default function ExpenseDetailPage() {
               
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-slate-700 rounded-lg">
-                    <User size={16} className="text-slate-400" />
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <User size={16} className="text-gray-600" />
                   </div>
                   <div>
-                    <p className="text-white">Submitted</p>
-                    <p className="text-sm text-slate-400">{formatDate(expense.dateSubmitted)}</p>
+                    <p className="text-gray-900">Submitted</p>
+                    <p className="text-sm text-gray-600">{formatDate(record.dateSubmitted)}</p>
                   </div>
                 </div>
                 <StatusBadge status="pending" />
               </div>
               
-              {expense.dateApproved && (
+              {record.dateApproved && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-700 rounded-lg">
-                      <CheckCircle size={16} className="text-green-400" />
+                    <div className="p-2 bg-gray-100 rounded-lg">
+                      <CheckCircle size={16} className="text-green-600" />
                     </div>
                     <div>
-                      <p className="text-white">Approved</p>
-                      <p className="text-sm text-slate-400">{formatDate(expense.dateApproved)}</p>
+                      <p className="text-gray-900">Approved</p>
+                      <p className="text-sm text-gray-600">{formatDate(record.dateApproved)}</p>
                     </div>
                   </div>
                   <StatusBadge status="approved" />
                 </div>
               )}
               
-              {expense.datePaid && (
+              {record.datePaid && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-700 rounded-lg">
-                      <DollarSign size={16} className="text-blue-400" />
+                    <div className="p-2 bg-gray-100 rounded-lg">
+                      <TrendingUp size={16} className="text-green-600" />
                     </div>
                     <div>
-                      <p className="text-white">Paid</p>
-                      <p className="text-sm text-slate-400">{formatDate(expense.datePaid)}</p>
+                      <p className="text-gray-900">Recorded</p>
+                      <p className="text-sm text-gray-600">{formatDate(record.datePaid)}</p>
                     </div>
                   </div>
                   <StatusBadge status="paid" />
@@ -269,46 +270,46 @@ export default function ExpenseDetailPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Status Card */}
-          <div className="bg-slate-800 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Current Status</h2>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Current Status</h2>
             
             <div className="flex items-center justify-between mb-6">
-              <StatusBadge status={expense.status} />
-              <span className="text-sm text-slate-400">Updated {formatDate(expense.updatedAt)}</span>
+              <StatusBadge status={record.status} />
+              <span className="text-sm text-gray-600">Updated {formatDate(record.updatedAt)}</span>
             </div>
             
             {/* Status Actions */}
             <div className="space-y-3">
-              {expense.status === 'pending' && (
+              {record.status === 'pending' && (
                 <>
                   <button
                     onClick={() => handleStatusUpdate('approved')}
                     disabled={isUpdating}
                     className="w-full py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors disabled:opacity-50"
                   >
-                    Approve Expense
+                    Approve Income
                   </button>
                   <button
                     onClick={() => handleStatusUpdate('rejected')}
                     disabled={isUpdating}
                     className="w-full py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors disabled:opacity-50"
                   >
-                    Reject Expense
+                    Reject Income
                   </button>
                 </>
               )}
               
-              {expense.status === 'approved' && (
+              {record.status === 'approved' && (
                 <button
                   onClick={() => handleStatusUpdate('paid')}
                   disabled={isUpdating}
                   className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors disabled:opacity-50"
                 >
-                  Mark as Paid
+                  Mark as Recorded
                 </button>
               )}
               
-              {(expense.status === 'rejected' || expense.status === 'paid') && (
+              {(record.status === 'rejected' || record.status === 'paid') && (
                 <button
                   onClick={() => handleStatusUpdate('pending')}
                   disabled={isUpdating}
@@ -320,24 +321,28 @@ export default function ExpenseDetailPage() {
             </div>
           </div>
 
-          {/* Receipt Card */}
-          {expense.receiptUrl && (
-            <div className="bg-slate-800 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">Receipt</h2>
+          {/* Attachments Card */}
+          {record.attachments && record.attachments.length > 0 && (
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Attachments</h2>
               
-              <div className="aspect-video bg-slate-700 rounded-lg flex items-center justify-center mb-4">
-                <FileText size={48} className="text-slate-400" />
+              <div className="space-y-3">
+                {record.attachments.map((attachment) => (
+                  <a
+                    key={attachment.id}
+                    href={attachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText size={16} className="text-gray-600" />
+                      <span className="text-sm text-gray-900">{attachment.name}</span>
+                    </div>
+                    <Download size={16} className="text-gray-400" />
+                  </a>
+                ))}
               </div>
-              
-              <a
-                href={expense.receiptUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
-              >
-                <Download size={18} />
-                Download Receipt
-              </a>
             </div>
           )}
         </div>
