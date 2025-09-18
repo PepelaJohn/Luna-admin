@@ -174,7 +174,7 @@ function createRedirectResponse(request: NextRequest, redirectPath: string) {
 
 // Enhanced matcher configuration
 export const config = {
-  matcher: [
+  matcher: [   
     "/admin/:path*",
     "/dashboard/:path*",
     "/profile",
@@ -190,6 +190,8 @@ export const config = {
 };
 
 
-
-
-
+// Simple empty middleware function used to bypass middleware processing
+// export default function middleware() {
+//   // Do nothing
+//   return null
+// }

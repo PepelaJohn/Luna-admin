@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus, Download, Filter } from "lucide-react";
+import { Plus, Download, Filter, ArrowLeft } from "lucide-react";
 import { FinancialRecord } from "@/types/expenditure";
 import ExpenseTable from "@/components/expenditure/ExpenseTable";
 import ExpenseFilterPanel from "@/components/expenditure/ExpenseFilterPanel";
+import ExportDropdown from "@/components/expenditure/ExportDropdown";
 import { getFinancialRecords, getFinancialSummary } from "@/lib/expenditure";
 
 export default function ExpensesPage() {
@@ -72,6 +73,17 @@ export default function ExpensesPage() {
 
   return (
     <div className="space-y-6">
+      {/* Return Button */}
+      <div className="flex items-center">
+        <Link 
+          href="/dashboard/expenditure"
+          className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <ArrowLeft size={20} />
+          <span className="text-sm font-medium">Back to Dashboard</span>
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -82,10 +94,12 @@ export default function ExpensesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
-            <Download size={18} />
-            Export
-          </button>
+          <ExportDropdown
+            records={records}
+            filteredRecords={filteredRecords}
+            activeTab="expenses"
+            filters={filters}
+          />
           <Link 
             href="/dashboard/expenditure/expenses/create"
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-400 to-orange-500 text-white rounded-lg hover:from-orange-500 hover:to-orange-600 transition-all"

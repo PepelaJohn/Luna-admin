@@ -20,13 +20,6 @@ export default function ExpenseStats({ expenses }: ExpenseStatsProps) {
 
   const stats = [
     {
-      title: "Total Expenses",
-      value: `$${totalAmount.toLocaleString()}`,
-      icon: DollarSign,
-      color: "text-blue-400",
-      bgColor: "bg-blue-400/10",
-    },
-    {
       title: "Pending Approval",
       value: `$${pendingAmount.toLocaleString()}`,
       icon: Clock,
@@ -54,11 +47,11 @@ export default function ExpenseStats({ expenses }: ExpenseStatsProps) {
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         return (
-          <div key={index} className="bg-slate-800 rounded-xl p-6">
+          <div key={index} className="bg-white rounded-xl p-6 border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-400">{stat.title}</p>
-                <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
+                <p className="text-sm font-medium text-gray-500">{stat.title}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
               </div>
               <div className={`p-3 rounded-lg ${stat.bgColor}`}>
                 <Icon className={`w-6 h-6 ${stat.color}`} />

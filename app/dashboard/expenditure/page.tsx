@@ -2,13 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus, Download, Filter, BarChart3, TrendingUp, TrendingDown, CheckCircle } from "lucide-react";
+import { Plus, Download, Filter, BarChart3, TrendingUp, TrendingDown, CheckCircle, Settings, Wallet } from "lucide-react";
 import { FinancialRecord, FinancialSummary } from "@/types/expenditure";
+import { Expense, ExpenseFilters } from "@/types/expenditure";
 import ExpenseTable from "@/components/expenditure/ExpenseTable";
 import FinancialStats from "@/components/expenditure/FinancialStats";
+import ExpenseStats from "@/components/expenditure/ExpenseStats";
 import ExpenseFilterPanel from "@/components/expenditure/ExpenseFilterPanel";
 import BalanceChart from "@/components/expenditure/BalanceChart";
 import TabsNavigation from "@/components/expenditure/TabsNavigation";
+import ExportDropdown from "@/components/expenditure/ExportDropdown";
 import { getFinancialRecords, getFinancialSummary } from "@/lib/expenditure";
 
 export default function ExpenditureDashboard() {
@@ -20,6 +23,7 @@ export default function ExpenditureDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
 
   useEffect(() => {
     loadData();
@@ -38,6 +42,29 @@ export default function ExpenditureDashboard() {
       ]);
       setRecords(recordsData);
       setSummary(summaryData);
+      
+      // Convert expenditure records to expenses format for ExpenseStats
+      const expenseRecords = recordsData
+        .filter(record => record.type === 'expenditure')
+        .map(record => ({
+          id: record.id,
+          title: record.title,
+          description: record.description,
+          amount: record.amount,
+          currency: record.currency,
+          category: record.category,
+          status: record.status,
+          dateIncurred: record.date,
+          dateSubmitted: record.dateSubmitted,
+          dateApproved: record.dateApproved,
+          datePaid: record.datePaid,
+          submittedBy: record.submittedBy,
+          approvedBy: record.approvedBy,
+          notes: record.notes,
+          createdAt: record.createdAt,
+          updatedAt: record.updatedAt,
+        }));
+      setExpenses(expenseRecords);
       
       // Count pending records for approval badge
       const pending = recordsData.filter(record => record.status === 'pending');
@@ -142,12 +169,34 @@ export default function ExpenditureDashboard() {
           <p className="text-gray-600 mt-1">Track income and expenditures</p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
-            <Download size={18} />
-            Export
-          </button>
+          <ExportDropdown
+            records={records}
+            filteredRecords={filteredRecords}
+            summary={summary || undefined}
+            activeTab={activeTab}
+            filters={filters}
+          />
           {getActionButton()}
         </div>
+      </div>
+
+      {/* Management Buttons Row */}
+      <div className="flex gap-2 flex-wrap">
+        <Link 
+          href="/dashboard/expenditure/income"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+        >
+          <Wallet size={18} />
+          Manage Income
+        </Link>
+        
+        <Link 
+          href="/dashboard/expenditure/expenses"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+        >
+          <Settings size={18} />
+          Manage Expenses
+        </Link>
       </div>
 
       {/* Tab Navigation */}
@@ -156,6 +205,11 @@ export default function ExpenditureDashboard() {
       {/* Overview Stats */}
       {activeTab === 'overview' && summary && (
         <FinancialStats summary={summary} />
+      )}
+
+      {/* Expense Statistics - Only show on overview tab */}
+      {activeTab === 'overview' && (
+        <ExpenseStats expenses={expenses} />
       )}
 
       {/* Filters */}
