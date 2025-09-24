@@ -190,7 +190,7 @@ export const config = {
 };
 
 
-// Simple empty middleware function used to bypass middleware processing
+// // Simple empty middleware function used to bypass middleware processing
 // export default function middleware() {
 //   // Do nothing
 //   return null

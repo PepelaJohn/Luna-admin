@@ -25,9 +25,10 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 // POST - Upload receipt file
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } // Change this line
 ) {
   try {
+    const params = await context.params; // Await the params
     const expenseId = params.id;
     
     if (!expenseId) {
@@ -104,9 +105,10 @@ export async function POST(
 // DELETE - Remove receipt file
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } // Change this line
 ) {
   try {
+    const params = await context.params; // Await the params
     const expenseId = params.id;
     
     if (!expenseId) {

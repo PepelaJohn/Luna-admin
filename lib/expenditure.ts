@@ -93,6 +93,7 @@ let budgets: Budget[] = [
     startDate: new Date('2023-10-01'),
     endDate: new Date('2023-10-31'),
     spent: 650,
+    income: 0,
     createdAt: new Date('2023-10-01'),
     updatedAt: new Date('2023-10-25'),
   },
@@ -106,6 +107,7 @@ let budgets: Budget[] = [
     startDate: new Date('2023-10-01'),
     endDate: new Date('2023-10-31'),
     spent: 420,
+    income: 0,
     createdAt: new Date('2023-10-01'),
     updatedAt: new Date('2023-10-25'),
   },
@@ -119,6 +121,7 @@ let budgets: Budget[] = [
     startDate: new Date('2023-10-01'),
     endDate: new Date('2023-10-31'),
     spent: 1250,
+    income: 0,
     createdAt: new Date('2023-10-01'),
     updatedAt: new Date('2023-10-25'),
   },
@@ -132,6 +135,7 @@ let budgets: Budget[] = [
     startDate: new Date('2023-10-01'),
     endDate: new Date('2023-10-31'),
     spent: 1200,
+    income: 0,
     createdAt: new Date('2023-10-01'),
     updatedAt: new Date('2023-10-25'),
   },
@@ -145,6 +149,7 @@ let budgets: Budget[] = [
     startDate: new Date('2023-10-01'),
     endDate: new Date('2023-10-31'),
     spent: 750,
+    income: 0,
     createdAt: new Date('2023-10-01'),
     updatedAt: new Date('2023-10-25'),
   },
@@ -156,6 +161,7 @@ let categories: ExpenseCategory[] = [
     name: 'Office',
     description: 'Office supplies and equipment',
     color: '#3B82F6', // blue
+    type: 'expenditure',
     createdAt: new Date('2023-10-01'),
     updatedAt: new Date('2023-10-01'),
   },
@@ -164,6 +170,7 @@ let categories: ExpenseCategory[] = [
     name: 'Team Building',
     description: 'Team activities and events',
     color: '#F59E0B', // amber
+    type: 'expenditure',
     createdAt: new Date('2023-10-01'),
     updatedAt: new Date('2023-10-01'),
   },
@@ -172,6 +179,7 @@ let categories: ExpenseCategory[] = [
     name: 'Travel',
     description: 'Business travel expenses',
     color: '#10B981', // emerald
+    type: 'expenditure',
     createdAt: new Date('2023-10-01'),
     updatedAt: new Date('2023-10-01'),
   },
@@ -180,6 +188,7 @@ let categories: ExpenseCategory[] = [
     name: 'Software',
     description: 'Software subscriptions and licenses',
     color: '#8B5CF6', // violet
+    type: 'expenditure',
     createdAt: new Date('2023-10-01'),
     updatedAt: new Date('2023-10-01'),
   },
@@ -188,6 +197,7 @@ let categories: ExpenseCategory[] = [
     name: 'Marketing',
     description: 'Marketing and promotional expenses',
     color: '#EC4899', // pink
+    type: 'expenditure',
     createdAt: new Date('2023-10-01'),
     updatedAt: new Date('2023-10-01'),
   },
@@ -196,6 +206,7 @@ let categories: ExpenseCategory[] = [
     name: 'Hardware',
     description: 'Computer hardware and equipment',
     color: '#EF4444', // red
+    type: 'expenditure',
     createdAt: new Date('2023-10-01'),
     updatedAt: new Date('2023-10-01'),
   },
@@ -204,6 +215,7 @@ let categories: ExpenseCategory[] = [
     name: 'Training',
     description: 'Employee training and development',
     color: '#06B6D4', // cyan
+    type: 'expenditure',
     createdAt: new Date('2023-10-01'),
     updatedAt: new Date('2023-10-01'),
   },
@@ -212,6 +224,7 @@ let categories: ExpenseCategory[] = [
     name: 'Other',
     description: 'Miscellaneous expenses',
     color: '#6B7280', // gray
+    type: 'expenditure',
     createdAt: new Date('2023-10-01'),
     updatedAt: new Date('2023-10-01'),
   },
@@ -666,4 +679,397 @@ export const deleteReceiptFile = async (expenseId: string): Promise<{ success: b
       error: error.response?.data?.error || error.message || 'Delete failed',
     };
   }
+};
+
+
+
+export const getFinancialRecords = async (filters?: any): Promise<any[]> => {
+  await delay(500);
+  
+  // Combine expenses and incomes into financial records
+  const expenseRecords = expenses.map(expense => ({
+    id: expense.id,
+    title: expense.title,
+    description: expense.description,
+    amount: expense.amount,
+    currency: expense.currency,
+    category: expense.category,
+    type: 'expenditure' as const,
+    status: expense.status,
+    date: expense.dateIncurred,
+    dateSubmitted: expense.dateSubmitted,
+    dateApproved: expense.dateApproved,
+    datePaid: expense.datePaid,
+    submittedBy: expense.submittedBy,
+    approvedBy: expense.approvedBy,
+    createdAt: expense.createdAt,
+    updatedAt: expense.updatedAt,
+  }));
+
+  const incomeRecords = incomes.map(income => ({
+    id: income.id,
+    title: income.title,
+    description: income.description,
+    amount: income.amount,
+    currency: income.currency,
+    category: income.source,
+    type: 'income' as const,
+    status: 'paid' as const, // Incomes are typically paid when received
+    date: income.dateReceived,
+    dateSubmitted: income.dateReceived,
+    dateApproved: income.dateReceived,
+    datePaid: income.dateReceived,
+    submittedBy: income.receivedBy,
+    approvedBy: income.receivedBy,
+    createdAt: income.createdAt,
+    updatedAt: income.updatedAt,
+  }));
+
+  let records = [...incomeRecords, ...expenseRecords];
+  
+  if (!filters) return records;
+  
+  let filtered = [...records];
+  
+  if (filters.status) {
+    filtered = filtered.filter(record => record.status === filters.status);
+  }
+  
+  if (filters.category) {
+    filtered = filtered.filter(record => record.category === filters.category);
+  }
+  
+  if (filters.type) {
+    filtered = filtered.filter(record => record.type === filters.type);
+  }
+  
+  if (filters.search) {
+    const searchLower = filters.search.toLowerCase();
+    filtered = filtered.filter(record => 
+      record.title.toLowerCase().includes(searchLower) ||
+      record.description.toLowerCase().includes(searchLower)
+    );
+  }
+  
+  return filtered;
+};
+
+export const getFinancialRecord = async (id: string): Promise<any | null> => {
+  await delay(300);
+  
+  // Check expenses first
+  const expense = expenses.find(expense => expense.id === id);
+  if (expense) {
+    return {
+      id: expense.id,
+      title: expense.title,
+      description: expense.description,
+      amount: expense.amount,
+      currency: expense.currency,
+      category: expense.category,
+      type: 'expenditure' as const,
+      status: expense.status,
+      date: expense.dateIncurred,
+      dateSubmitted: expense.dateSubmitted,
+      dateApproved: expense.dateApproved,
+      datePaid: expense.datePaid,
+      submittedBy: expense.submittedBy,
+      approvedBy: expense.approvedBy,
+      createdAt: expense.createdAt,
+      updatedAt: expense.updatedAt,
+    };
+  }
+  
+  // Check incomes
+  const income = incomes.find(income => income.id === id);
+  if (income) {
+    return {
+      id: income.id,
+      title: income.title,
+      description: income.description,
+      amount: income.amount,
+      currency: income.currency,
+      category: income.source,
+      type: 'income' as const,
+      status: 'paid' as const,
+      date: income.dateReceived,
+      dateSubmitted: income.dateReceived,
+      dateApproved: income.dateReceived,
+      datePaid: income.dateReceived,
+      submittedBy: income.receivedBy,
+      approvedBy: income.receivedBy,
+      createdAt: income.createdAt,
+      updatedAt: income.updatedAt,
+    };
+  }
+  
+  return null;
+};
+
+export const createFinancialRecord = async (recordData: Partial<any>): Promise<any> => {
+  await delay(800);
+  
+  if (recordData.type === 'income') {
+    const income: Income = {
+      id: `inc_${Date.now()}`,
+      title: recordData.title || '',
+      description: recordData.description,
+      amount: recordData.amount || 0,
+      currency: recordData.currency || 'USD',
+      source: recordData.category || 'other',
+      dateReceived: recordData.date || new Date(),
+      receivedBy: 'current-user@example.com',
+      reference: recordData.reference,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    incomes.unshift(income);
+    return {
+      id: income.id,
+      title: income.title,
+      description: income.description,
+      amount: income.amount,
+      currency: income.currency,
+      category: income.source,
+      type: 'income' as const,
+      status: 'paid' as const,
+      date: income.dateReceived,
+      dateSubmitted: income.dateReceived,
+      dateApproved: income.dateReceived,
+      datePaid: income.dateReceived,
+      submittedBy: income.receivedBy,
+      approvedBy: income.receivedBy,
+      createdAt: income.createdAt,
+      updatedAt: income.updatedAt,
+    };
+  } else {
+    // Default to expense
+    const expense: Expense = {
+      id: Date.now().toString(),
+      title: recordData.title || '',
+      description: recordData.description || '',
+      amount: recordData.amount || 0,
+      currency: recordData.currency || 'USD',
+      category: recordData.category || 'Other',
+      status: 'draft',
+      dateIncurred: recordData.date || new Date(),
+      dateSubmitted: new Date(),
+      submittedBy: 'current-user@example.com',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    expenses.push(expense);
+    return {
+      id: expense.id,
+      title: expense.title,
+      description: expense.description,
+      amount: expense.amount,
+      currency: expense.currency,
+      category: expense.category,
+      type: 'expenditure' as const,
+      status: expense.status,
+      date: expense.dateIncurred,
+      dateSubmitted: expense.dateSubmitted,
+      dateApproved: expense.dateApproved,
+      datePaid: expense.datePaid,
+      submittedBy: expense.submittedBy,
+      approvedBy: expense.approvedBy,
+      createdAt: expense.createdAt,
+      updatedAt: expense.updatedAt,
+    };
+  }
+};
+
+export const updateFinancialRecord = async (id: string, recordData: Partial<any>): Promise<any | null> => {
+  await delay(600);
+  
+  // Check if it's an expense
+  const expenseIndex = expenses.findIndex(expense => expense.id === id);
+  if (expenseIndex !== -1) {
+    expenses[expenseIndex] = {
+      ...expenses[expenseIndex],
+      ...recordData,
+      updatedAt: new Date()
+    };
+    const expense = expenses[expenseIndex];
+    return {
+      id: expense.id,
+      title: expense.title,
+      description: expense.description,
+      amount: expense.amount,
+      currency: expense.currency,
+      category: expense.category,
+      type: 'expenditure' as const,
+      status: expense.status,
+      date: expense.dateIncurred,
+      dateSubmitted: expense.dateSubmitted,
+      dateApproved: expense.dateApproved,
+      datePaid: expense.datePaid,
+      submittedBy: expense.submittedBy,
+      approvedBy: expense.approvedBy,
+      createdAt: expense.createdAt,
+      updatedAt: expense.updatedAt,
+    };
+  }
+  
+  // Check if it's an income
+  const incomeIndex = incomes.findIndex(income => income.id === id);
+  if (incomeIndex !== -1) {
+    incomes[incomeIndex] = {
+      ...incomes[incomeIndex],
+      ...recordData,
+      updatedAt: new Date()
+    } as Income;
+    const income = incomes[incomeIndex];
+    return {
+      id: income.id,
+      title: income.title,
+      description: income.description,
+      amount: income.amount,
+      currency: income.currency,
+      category: income.source,
+      type: 'income' as const,
+      status: 'paid' as const,
+      date: income.dateReceived,
+      dateSubmitted: income.dateReceived,
+      dateApproved: income.dateReceived,
+      datePaid: income.dateReceived,
+      submittedBy: income.receivedBy,
+      approvedBy: income.receivedBy,
+      createdAt: income.createdAt,
+      updatedAt: income.updatedAt,
+    };
+  }
+  
+  return null;
+};
+
+export const updateRecordStatus = async (id: string, status: string, approvedBy?: string): Promise<any | null> => {
+  await delay(500);
+  
+  // Check if it's an expense
+  const expense = expenses.find(expense => expense.id === id);
+  if (expense) {
+    expense.status = status as any;
+    expense.updatedAt = new Date();
+    
+    if (status === 'approved') {
+      expense.dateApproved = new Date();
+      expense.approvedBy = approvedBy || 'admin@example.com';
+    } else if (status === 'paid') {
+      expense.datePaid = new Date();
+    }
+    
+    return {
+      id: expense.id,
+      title: expense.title,
+      description: expense.description,
+      amount: expense.amount,
+      currency: expense.currency,
+      category: expense.category,
+      type: 'expenditure' as const,
+      status: expense.status,
+      date: expense.dateIncurred,
+      dateSubmitted: expense.dateSubmitted,
+      dateApproved: expense.dateApproved,
+      datePaid: expense.datePaid,
+      submittedBy: expense.submittedBy,
+      approvedBy: expense.approvedBy,
+      createdAt: expense.createdAt,
+      updatedAt: expense.updatedAt,
+    };
+  }
+  
+  // Incomes typically don't have status changes in this system
+  const income = incomes.find(income => income.id === id);
+  if (income) {
+    income.updatedAt = new Date();
+    return {
+      id: income.id,
+      title: income.title,
+      description: income.description,
+      amount: income.amount,
+      currency: income.currency,
+      category: income.source,
+      type: 'income' as const,
+      status: 'paid' as const,
+      date: income.dateReceived,
+      dateSubmitted: income.dateReceived,
+      dateApproved: income.dateReceived,
+      datePaid: income.dateReceived,
+      submittedBy: income.receivedBy,
+      approvedBy: income.receivedBy,
+      createdAt: income.createdAt,
+      updatedAt: income.updatedAt,
+    };
+  }
+  
+  return null;
+};
+
+// Financial Summary (NEW)
+export const getFinancialSummary = async (): Promise<any> => {
+  await delay(400);
+  
+  const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
+  
+  const totalExpenses = expenses
+    .filter(expense => expense.status === 'paid' || expense.status === 'approved')
+    .reduce((sum, expense) => sum + expense.amount, 0);
+  
+  const pendingExpenses = expenses
+    .filter(expense => expense.status === 'pending')
+    .reduce((sum, expense) => sum + expense.amount, 0);
+  
+  const netBalance = totalIncome - totalExpenses;
+  const availableBudget = totalIncome - totalExpenses - pendingExpenses;
+
+  return {
+    totalIncome,
+    totalExpenses,
+    netBalance,
+    pendingIncome: 0, // Incomes are immediately paid in this system
+    pendingExpenses,
+    availableBudget
+  };
+};
+
+// Utility functions (NEW)
+export const getAvailableBudget = async (): Promise<number> => {
+  const summary = await getFinancialSummary();
+  return summary.availableBudget;
+};
+
+export const deleteFinancialRecord = async (id: string): Promise<boolean> => {
+  await delay(400);
+  
+  // Check expenses
+  const expenseIndex = expenses.findIndex(expense => expense.id === id);
+  if (expenseIndex !== -1) {
+    expenses.splice(expenseIndex, 1);
+    return true;
+  }
+  
+  // Check incomes
+  const incomeIndex = incomes.findIndex(income => income.id === id);
+  if (incomeIndex !== -1) {
+    incomes.splice(incomeIndex, 1);
+    return true;
+  }
+  
+  return false;
+};
+
+// File upload functions (mock for now)
+export const uploadFiles = async (files: File[]): Promise<any[]> => {
+  await delay(1000);
+  
+  return files.map((file, index) => ({
+    id: `file-${Date.now()}-${index}`,
+    name: file.name,
+    url: URL.createObjectURL(file),
+    type: file.type,
+    size: file.size,
+    uploadedAt: new Date()
+  }));
 };
