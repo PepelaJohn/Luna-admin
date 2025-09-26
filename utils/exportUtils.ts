@@ -29,21 +29,43 @@ export const exportToCSV = (
     'Approved By'
   ];
 
+ 
+  const escapeCSVValue = (value: string | number | undefined | null): string => {
+    if (value === null || value === undefined) return '';
+    const stringValue = value.toString();
+    // Escape quotes by doubling them and wrap in quotes if contains comma, quote, or newline
+    if (stringValue.includes('"') || stringValue.includes(',') || stringValue.includes('\n')) {
+      return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+    return stringValue;
+  };
+
+  // Helper function to format date safely
+  const formatDateSafely = (date: string | Date | undefined | null): string => {
+    if (!date) return '';
+    try {
+      return format(new Date(date), 'yyyy-MM-dd');
+    } catch (error) {
+      console.warn('Invalid date format:', date);
+      return '';
+    }
+  };
+
   // Convert records to CSV rows
   const csvRows = records.map(record => [
-    format(new Date(record.date), 'yyyy-MM-dd'),
-    record.type,
-    `"${record.title}"`,
-    `"${record.description}"`,
-    record.amount.toString(),
-    record.currency,
-    record.category,
-    record.status,
-    record.submittedBy,
-    format(new Date(record.dateSubmitted), 'yyyy-MM-dd'),
-    record.dateApproved ? format(new Date(record.dateApproved), 'yyyy-MM-dd') : '',
-    record.datePaid ? format(new Date(record.datePaid), 'yyyy-MM-dd') : '',
-    record.approvedBy || ''
+    escapeCSVValue(formatDateSafely(record.date)),
+    escapeCSVValue(record.type),
+    escapeCSVValue(record.title),
+    escapeCSVValue(record.description),
+    escapeCSVValue(record.amount),
+    escapeCSVValue(record.currency),
+    escapeCSVValue(record.category),
+    escapeCSVValue(record.status),
+    escapeCSVValue(record.submittedBy),
+    escapeCSVValue(formatDateSafely(record.dateSubmitted)),
+    escapeCSVValue(formatDateSafely(record.dateApproved)),
+    escapeCSVValue(formatDateSafely(record.datePaid)),
+    escapeCSVValue(record.approvedBy)
   ]);
 
   // Create CSV content
@@ -73,6 +95,9 @@ export const exportToCSV = (
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  
+  // Clean up the URL object
+  URL.revokeObjectURL(url);
 };
 
 // PDF Export Functions
@@ -91,17 +116,42 @@ export const exportToPDF = async (
     // Create new PDF document
     const doc = new jsPDF();
     
-    // Set up colors
-    const primaryColor = [31, 41, 55]; // gray-800
-    const secondaryColor = [107, 114, 128]; // gray-500
-    const greenColor = [5, 150, 105]; // green-600
-    const redColor = [220, 38, 38]; // red-600
+    // Set up colors - using RGB values (0-255)
+    const primaryColor: [number, number, number] = [31, 41, 55]; // gray-800
+    const secondaryColor: [number, number, number] = [107, 114, 128]; // gray-500
+    const greenColor: [number, number, number] = [5, 150, 105]; // green-600
+    const redColor: [number, number, number] = [220, 38, 38]; // red-600
+    const orangeColor: [number, number, number] = [217, 119, 6]; // orange-600
+    const purpleColor: [number, number, number] = [124, 58, 237]; // purple-600
+    
+    // Helper function to format date safely for PDF
+    const formatDateForPDF = (date: string | Date | undefined | null): string => {
+      if (!date) return 'N/A';
+      try {
+        return format(new Date(date), 'MMM dd, yyyy');
+      } catch (error) {
+        console.warn('Invalid date format:', date);
+        return 'Invalid Date';
+      }
+    };
+
+    // Helper function to truncate text
+    const truncateText = (text: string | undefined | null, maxLength: number): string => {
+      if (!text) return '';
+      return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    };
+
+    // Helper function to format currency
+    const formatCurrency = (amount: number | undefined | null): string => {
+      if (amount === null || amount === undefined) return '$0';
+      return `$${amount.toLocaleString()}`;
+    };
     
     // Add header
     doc.setFontSize(20);
     doc.setTextColor(...primaryColor);
     doc.text(`Financial Report - ${tabTitle}`, 105, 20, { align: 'center' });
-    
+
     doc.setFontSize(12);
     doc.setTextColor(...secondaryColor);
     doc.text(`Generated on ${currentDate}`, 105, 30, { align: 'center' });
@@ -121,11 +171,11 @@ export const exportToPDF = async (
       yPosition += 10;
       
       // Summary cards in a 2x2 grid
-      const summaryData = [
-        ['Total Income', `$${summary.totalIncome.toLocaleString()}`, greenColor],
-        ['Total Expenses', `$${summary.totalExpenses.toLocaleString()}`, redColor],
-        ['Net Balance', `$${summary.netBalance.toLocaleString()}`, summary.netBalance >= 0 ? greenColor : redColor],
-        ['Available Budget', `$${summary.availableBudget.toLocaleString()}`, primaryColor]
+      const summaryData: Array<[string, string, [number, number, number]]> = [
+        ['Total Income', formatCurrency(summary.totalIncome), greenColor],
+        ['Total Expenses', formatCurrency(summary.totalExpenses), redColor],
+        ['Net Balance', formatCurrency(summary.netBalance), summary.netBalance >= 0 ? greenColor : redColor],
+        ['Available Budget', formatCurrency(summary.availableBudget), primaryColor]
       ];
       
       summaryData.forEach((item, index) => {
@@ -134,11 +184,11 @@ export const exportToPDF = async (
         
         doc.setFontSize(10);
         doc.setTextColor(...secondaryColor);
-        doc.text(item[0] as string, x, y);
+        doc.text(item[0], x, y);
         
         doc.setFontSize(14);
-        doc.setTextColor(...(item[2] as number[]));
-        doc.text(item[1] as string, x, y + 8);
+        doc.setTextColor(...item[2]);
+        doc.text(item[1], x, y + 8);
       });
       
       yPosition += 50;
@@ -157,20 +207,24 @@ export const exportToPDF = async (
     const startX = 20;
     let currentY = yPosition;
     
-    // Draw table header
-    doc.setFillColor(249, 250, 251); // Light gray background
-    doc.rect(startX, currentY, colWidths.reduce((a, b) => a + b, 0), rowHeight, 'F');
+    // Function to draw table header
+    const drawTableHeader = (y: number) => {
+      doc.setFillColor(249, 250, 251); // Light gray background
+      doc.rect(startX, y, colWidths.reduce((a, b) => a + b, 0), rowHeight, 'F');
+      
+      doc.setFontSize(10);
+      doc.setTextColor(...primaryColor);
+      doc.setFont('helvetica', 'bold');
+      
+      let currentX = startX;
+      tableHeaders.forEach((header, index) => {
+        doc.text(header, currentX + 2, y + 5);
+        currentX += colWidths[index];
+      });
+    };
     
-    doc.setFontSize(10);
-    doc.setTextColor(...primaryColor);
-    doc.setFont('helvetica', 'bold');
-    
-    let currentX = startX;
-    tableHeaders.forEach((header, index) => {
-      doc.text(header, currentX + 2, currentY + 5);
-      currentX += colWidths[index];
-    });
-    
+    // Draw initial table header
+    drawTableHeader(currentY);
     currentY += rowHeight;
     
     // Draw table rows
@@ -184,19 +238,7 @@ export const exportToPDF = async (
         currentY = 20;
         
         // Redraw header on new page
-        doc.setFillColor(249, 250, 251);
-        doc.rect(startX, currentY, colWidths.reduce((a, b) => a + b, 0), rowHeight, 'F');
-        
-        doc.setFontSize(10);
-        doc.setTextColor(...primaryColor);
-        doc.setFont('helvetica', 'bold');
-        
-        currentX = startX;
-        tableHeaders.forEach((header, index) => {
-          doc.text(header, currentX + 2, currentY + 5);
-          currentX += colWidths[index];
-        });
-        
+        drawTableHeader(currentY);
         currentY += rowHeight;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
@@ -212,7 +254,7 @@ export const exportToPDF = async (
       
       // Draw cell borders
       doc.setDrawColor(229, 231, 235);
-      currentX = startX;
+      let currentX = startX;
       colWidths.forEach(width => {
         doc.line(currentX, currentY, currentX, currentY + rowHeight);
         currentX += width;
@@ -221,12 +263,12 @@ export const exportToPDF = async (
       
       // Add row data
       const rowData = [
-        format(new Date(record.date), 'MMM dd, yyyy'),
-        record.type.charAt(0).toUpperCase() + record.type.slice(1),
-        record.title.length > 20 ? record.title.substring(0, 20) + '...' : record.title,
-        `$${record.amount.toLocaleString()}`,
-        record.category.length > 12 ? record.category.substring(0, 12) + '...' : record.category,
-        record.status.charAt(0).toUpperCase() + record.status.slice(1)
+        formatDateForPDF(record.date),
+        record.type ? record.type.charAt(0).toUpperCase() + record.type.slice(1) : 'N/A',
+        truncateText(record.title, 20),
+        formatCurrency(record.amount),
+        truncateText(record.category, 12),
+        record.status ? record.status.charAt(0).toUpperCase() + record.status.slice(1) : 'N/A'
       ];
       
       currentX = startX;
@@ -237,9 +279,9 @@ export const exportToPDF = async (
           if (status === 'approved') {
             doc.setTextColor(...greenColor);
           } else if (status === 'pending') {
-            doc.setTextColor(217, 119, 6); // orange-600
+            doc.setTextColor(...orangeColor);
           } else if (status === 'paid') {
-            doc.setTextColor(124, 58, 237); // purple-600
+            doc.setTextColor(...purpleColor);
           } else {
             doc.setTextColor(...primaryColor);
           }
@@ -279,23 +321,27 @@ export const exportToPDF = async (
     
   } catch (error) {
     console.error('Error generating PDF:', error);
-    alert('Error generating PDF. Please try again.');
+    throw new Error('Failed to generate PDF report. Please try again.');
   }
 };
-
 
 // Utility function to get filtered data based on active tab
 export const getExportData = (
   records: FinancialRecord[],
   activeTab: string
 ): FinancialRecord[] => {
+  if (!records || !Array.isArray(records)) {
+    console.warn('Invalid records array provided to getExportData');
+    return [];
+  }
+
   switch (activeTab) {
     case 'income':
-      return records.filter(record => record.type === 'income');
+      return records.filter(record => record?.type === 'income');
     case 'expenses':
-      return records.filter(record => record.type === 'expenditure');
+      return records.filter(record => record?.type === 'expenditure');
     case 'approval':
-      return records.filter(record => record.status === 'pending');
+      return records.filter(record => record?.status === 'pending');
     default:
       return records;
   }
