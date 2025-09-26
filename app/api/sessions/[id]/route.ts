@@ -20,7 +20,7 @@ async function getUserFromToken(request: NextRequest) {
     throw new Error('InvalidAccessToken');
   }
 
-  const { payload, error } = verifyToken(accessToken, accessTokenOptions);
+  const { payload, error } = verifyToken(accessToken, accessTokenOptions as any);
   
   if (!payload || error) {
     throw new Error('InvalidAccessToken');

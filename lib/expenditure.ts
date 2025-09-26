@@ -394,6 +394,7 @@ export const createBudget = async (budgetData: Partial<Budget>): Promise<Budget>
     category: budgetData.category,
     createdAt: new Date(),
     updatedAt: new Date(),
+    income: 0
   };
   
   budgets.push(newBudget);
@@ -446,6 +447,7 @@ export const createCategory = async (categoryData: Partial<ExpenseCategory>): Pr
     color: categoryData.color || '#6B7280',
     createdAt: new Date(),
     updatedAt: new Date(),
+    type: 'income'
   };
   
   categories.push(newCategory);
@@ -747,7 +749,7 @@ export const getFinancialRecords = async (filters?: any): Promise<any[]> => {
     const searchLower = filters.search.toLowerCase();
     filtered = filtered.filter(record => 
       record.title.toLowerCase().includes(searchLower) ||
-      record.description.toLowerCase().includes(searchLower)
+      (record.description?.toLowerCase().includes(searchLower) ?? false)
     );
   }
   
