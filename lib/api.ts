@@ -502,75 +502,129 @@ import {
 
 const API_BASE = '/api/financial-records';
 
-// financialRecordsApi.ts
-function normalizeForJson(data: Partial<FinancialRecord>) {
-  const out: any = { ...data };
-  if (out.date instanceof Date) out.date = out.date.toISOString();
-  return out;
-}
 
-function logPayload(label: string, payload: unknown) {
+// Helper function to serialize data for API requests
+function serializeData(data: any): any {
+  const serialized: any = {};
   
-  console.debug(`[financialRecordsApi] ${label}`, payload);
+  for (const [key, value] of Object.entries(data)) {
+    if (value === undefined || value === null) {
+      continue;
+    }
+    
+    // Convert Date objects to ISO strings
+    if (value instanceof Date) {
+      serialized[key] = value.toISOString();
+    }
+    // Handle arrays (like attachments)
+    else if (Array.isArray(value)) {
+      serialized[key] = value.map(item => {
+        if (typeof item === 'object' && item !== null) {
+          return serializeData(item);
+        }
+        return item;
+      });
+    }
+    // Handle nested objects
+    else if (typeof value === 'object' && value !== null) {
+      serialized[key] = serializeData(value);
+    }
+    else {
+      serialized[key] = value;
+    }
+  }
+  
+  return serialized;
 }
 
 export const financialRecordsApi = {
+  // Create a new financial record
   async create(
-    data: Partial<FinancialRecord>,
+    data: Partial<FinancialRecord>
   ): Promise<ApiResponse<FinancialRecord>> {
-    const payload = normalizeForJson(data);
-    logPayload("create payload (JSON)", payload);
-
-    const res = await fetch(API_BASE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+    const serializedData = serializeData(data);
+    
+    const response = await fetch(API_BASE, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(serializedData),
     });
-    return res.json();
+
+    return response.json();
   },
 
-  async getAll(filters?: FinancialRecordFilters): Promise<PaginatedResponse<FinancialRecord>> {
+  // Get all financial records with optional filters
+  async getAll(
+    filters?: FinancialRecordFilters
+  ): Promise<PaginatedResponse<FinancialRecord>> {
     const params = new URLSearchParams();
+    
     if (filters) {
-      Object.entries(filters).forEach(([k, v]) => {
-        if (v !== undefined && v !== null) params.append(k, String(v));
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value));
+        }
       });
     }
-    const res = await fetch(`${API_BASE}?${params.toString()}`);
-    return res.json();
+
+    const url = `${API_BASE}?${params.toString()}`;
+    const response = await fetch(url);
+    
+    return response.json();
   },
 
+  // Get a single financial record by ID
   async getById(id: string): Promise<ApiResponse<FinancialRecord>> {
-    const res = await fetch(`${API_BASE}/${id}`);
-    return res.json();
+    const response = await fetch(`${API_BASE}/${id}`);
+    return response.json();
   },
 
+  // Update a financial record
   async update(
     id: string,
     data: Partial<FinancialRecord>,
-    keepExistingAttachments = true,
+    keepExistingAttachments: boolean = true
   ): Promise<ApiResponse<FinancialRecord>> {
-    const payload = { ...normalizeForJson(data), keepExistingAttachments };
-    logPayload("update payload (JSON)", payload);
-
-    const res = await fetch(`${API_BASE}/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+    const serializedData = serializeData({
+      ...data,
+      keepExistingAttachments,
     });
-    return res.json();
+    
+    const response = await fetch(`${API_BASE}/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(serializedData),
+    });
+
+    return response.json();
   },
 
+  // Delete a financial record
   async delete(id: string): Promise<ApiResponse> {
-    const res = await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
-    return res.json();
+    const response = await fetch(`${API_BASE}/${id}`, {
+      method: 'DELETE',
+    });
+
+    return response.json();
   },
 
-  async getStats(startDate?: string, endDate?: string): Promise<ApiResponse<FinancialStats>> {
+  // Get financial statistics
+  async getStats(
+    startDate?: string,
+    endDate?: string
+  ): Promise<ApiResponse<FinancialStats>> {
     const params = new URLSearchParams();
-    if (startDate) params.append("startDate", startDate);
-    if (endDate) params.append("endDate", endDate);
-    const res = await fetch(`${API_BASE}/stats?${params.toString()}`);
-    return res.json();
+    
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    const url = `${API_BASE}/stats?${params.toString()}`;
+    const response = await fetch(url);
+    
+    return response.json();
   },
 };

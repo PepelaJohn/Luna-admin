@@ -71,14 +71,30 @@ export default function EditExpensePage() {
         setUploadProgress(`Uploading ${files.length} file(s)...`);
         const uploadedAttachments = await uploadMultipleToImgbb(files);
         
-        // Merge with existing attachments
-        const existingAttachments = record?.attachments || [];
+        // Merge with existing attachments - properly serialize dates
+        const existingAttachments = (record?.attachments || []).map(att => ({
+          filename: att.filename,
+          url: att.url,
+          uploadedAt: att.uploadedAt instanceof Date 
+            ? att.uploadedAt.toISOString() 
+            : att.uploadedAt
+        }));
+        
         data.attachments = [...existingAttachments, ...uploadedAttachments];
+      } else if (record?.attachments && record.attachments.length > 0) {
+        // No new files, but preserve existing attachments with proper serialization
+        data.attachments = record.attachments.map(att => ({
+          filename: att.filename,
+          url: att.url,
+          uploadedAt: att.uploadedAt instanceof Date 
+            ? att.uploadedAt.toISOString() 
+            : att.uploadedAt
+        }));
       }
 
       setUploadProgress("Updating expense...");
       
-      await updateFinancialRecord(id, data);
+      await updateFinancialRecord(id, data, true);
       
       // Redirect to expenses list on success
       router.push("/dashboard/expenditure/expenses");

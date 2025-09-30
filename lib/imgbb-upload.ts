@@ -5,7 +5,7 @@ const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY || "";
 export interface UploadedFile {
   filename: string;
   url: string;
-  uploadedAt: Date;
+  uploadedAt: string; // ISO string
 }
 
 /**
@@ -73,7 +73,7 @@ export async function uploadMultipleToImgbb(
       return {
         filename: file.name,
         url: url,
-        uploadedAt: new Date(),
+        uploadedAt: new Date().toISOString(),
       };
     } catch (error) {
       console.error(`Failed to upload ${file.name}:`, error);
