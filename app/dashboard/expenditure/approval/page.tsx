@@ -18,7 +18,7 @@ export default function ApprovalPage() {
   const loadPendingRecords = async () => {
     try {
       setIsLoading(true);
-      const records = await getFinancialRecords({ status: 'pending' });
+      const records = await getFinancialRecords();
       setPendingRecords(records);
     } catch (error) {
       console.error("Failed to load pending records:", error);
@@ -91,7 +91,7 @@ export default function ApprovalPage() {
               <button
                 onClick={() => {
                   if (confirm('Approve all pending records?')) {
-                    pendingRecords.forEach(record => handleApprove(record.id));
+                    pendingRecords.forEach(record => handleApprove(record._id));
                   }
                 }}
                 disabled={isUpdating}

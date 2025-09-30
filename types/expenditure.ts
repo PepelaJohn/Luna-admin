@@ -6,7 +6,7 @@ export interface FinancialRecord {
   currency: string;
   category: string;
   type: 'income' | 'expenditure';
-  status: 'draft' | 'pending' | 'approved' | 'rejected' | 'paid' | 'archived';
+  status: 'draft' | 'pending' | 'approved' | 'rejected' | 'paid' ;
   date: string;
   dateSubmitted: Date ;
   dateApproved?: Date;

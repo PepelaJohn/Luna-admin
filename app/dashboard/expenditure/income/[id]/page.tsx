@@ -50,7 +50,7 @@ export default function IncomeDetailPage() {
     
     try {
       setIsUpdating(true);
-      await updateRecordStatus(record._id, newStatus);
+      await updateRecordStatus(record._id, newStatus );
       await loadRecord(); // Reload the record data
     } catch (error) {
       console.error("Failed to update status:", error);
@@ -67,13 +67,7 @@ export default function IncomeDetailPage() {
   };
 
   const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(date));
+    return date?.toString()
   };
 
   if (isLoading) {
@@ -153,7 +147,7 @@ export default function IncomeDetailPage() {
                   <Calendar size={16} />
                   <span className="text-sm">Date Received</span>
                 </div>
-                <p className="text-gray-900">{formatDate(record.date as any)}</p>
+                <p className="text-gray-900">{formatDate(record?.date as any)}</p>
               </div>
               
               <div className="space-y-1">
@@ -174,23 +168,23 @@ export default function IncomeDetailPage() {
                 </div>
               )}
               
-              {record.dateApproved && (
+              {record?.dateApproved && (
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-gray-600">
                     <Clock size={16} />
                     <span className="text-sm">Date Approved</span>
                   </div>
-                  <p className="text-gray-900">{formatDate(record.dateApproved)}</p>
+                  <p className="text-gray-900">{formatDate(record?.dateApproved)}</p>
                 </div>
               )}
               
-              {record.datePaid && (
+              {record?.datePaid && (
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-gray-600">
                     <Clock size={16} />
                     <span className="text-sm">Date Recorded</span>
                   </div>
-                  <p className="text-gray-900">{formatDate(record.datePaid)}</p>
+                  <p className="text-gray-900">{formatDate(record?.datePaid)}</p>
                 </div>
               )}
             </div>
@@ -228,13 +222,13 @@ export default function IncomeDetailPage() {
                   </div>
                   <div>
                     <p className="text-gray-900">Submitted</p>
-                    <p className="text-sm text-gray-600">{formatDate(record.dateSubmitted)}</p>
+                    <p className="text-sm text-gray-600">{formatDate(record?.dateSubmitted)}</p>
                   </div>
                 </div>
                 <StatusBadge status="pending" />
               </div>
               
-              {record.dateApproved && (
+              {record?.dateApproved && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-gray-100 rounded-lg">
@@ -242,14 +236,14 @@ export default function IncomeDetailPage() {
                     </div>
                     <div>
                       <p className="text-gray-900">Approved</p>
-                      <p className="text-sm text-gray-600">{formatDate(record.dateApproved)}</p>
+                      <p className="text-sm text-gray-600">{formatDate(record?.dateApproved)}</p>
                     </div>
                   </div>
                   <StatusBadge status="approved" />
                 </div>
               )}
               
-              {record.datePaid && (
+              {record?.datePaid && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-gray-100 rounded-lg">
@@ -257,7 +251,7 @@ export default function IncomeDetailPage() {
                     </div>
                     <div>
                       <p className="text-gray-900">Recorded</p>
-                      <p className="text-sm text-gray-600">{formatDate(record.datePaid)}</p>
+                      <p className="text-sm text-gray-600">{formatDate(record?.datePaid)}</p>
                     </div>
                   </div>
                   <StatusBadge status="paid" />

@@ -707,7 +707,7 @@ export async function getFinancialRecords(
 export async function getFinancialRecord(id: string): Promise<FinancialRecord | null> {
   try {
     const response = await financialRecordsApi.getById(id);
-    
+    console.log(response)
     if (!response.success) {
       throw new Error(response.error || 'Failed to fetch record');
     }

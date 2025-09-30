@@ -4,9 +4,9 @@ import FinancialRecord from '@/models/FinancialRecord';
 import { connectDB } from '@/lib/db';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // GET - Fetch a single financial record
@@ -16,8 +16,8 @@ export async function GET(
 ) {
   try {
     await connectDB();
-
-    const record = await FinancialRecord.findById(params.id);
+    const id = (await params).id
+    const record = await FinancialRecord.findById(id);
 
     if (!record) {
       return NextResponse.json(
@@ -46,7 +46,7 @@ export async function PUT(
 ) {
   try {
     await connectDB();
-
+const id = (await params).id
     const body = await request.json();
       console.log(body)
     // Extract update data
@@ -62,7 +62,7 @@ export async function PUT(
     };
 
     // Fetch existing record
-    const existingRecord = await FinancialRecord.findById(params.id);
+    const existingRecord = await FinancialRecord.findById(id);
     if (!existingRecord) {
       return NextResponse.json(
         { success: false, error: 'Financial record not found' },
@@ -83,7 +83,7 @@ export async function PUT(
 
     // Update the record
     const record = await FinancialRecord.findByIdAndUpdate(
-      params.id,
+      id,
       updateData,
       { new: true, runValidators: true }
     );
@@ -109,8 +109,8 @@ export async function DELETE(
 ) {
   try {
     await connectDB();
-
-    const record = await FinancialRecord.findById(params.id);
+    const id = (await params).id
+    const record = await FinancialRecord.findById(id);
 
     if (!record) {
       return NextResponse.json(
@@ -120,7 +120,7 @@ export async function DELETE(
     }
 
     // Note: Attachments are stored on ImgBB, so no need to delete local files
-    await FinancialRecord.findByIdAndDelete(params.id);
+    await FinancialRecord.findByIdAndDelete(id);
 
     return NextResponse.json({
       success: true,

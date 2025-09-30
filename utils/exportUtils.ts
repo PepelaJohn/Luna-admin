@@ -75,8 +75,8 @@ export const exportToCSV = (
   if (summary) {
     csvContent += `# Financial Summary\n`;
     csvContent += `# Total Income: ${summary.totalIncome}\n`;
-    csvContent += `# Total Expenses: ${summary.totalExpenses}\n`;
-    csvContent += `# Net Balance: ${summary.netBalance}\n`;
+    csvContent += `# Total Expenses: ${summary.totalExpenditure}\n`;
+    csvContent += `# Net Balance: ${summary.balance}\n`;
     csvContent += `# Available Budget: ${summary.availableBudget}\n`;
     csvContent += `# Generated: ${format(new Date(), 'yyyy-MM-dd HH:mm:ss')}\n`;
     csvContent += `# Active Tab: ${activeTab || 'All'}\n`;
@@ -173,8 +173,8 @@ export const exportToPDF = async (
       // Summary cards in a 2x2 grid
       const summaryData: Array<[string, string, [number, number, number]]> = [
         ['Total Income', formatCurrency(summary.totalIncome), greenColor],
-        ['Total Expenses', formatCurrency(summary.totalExpenses), redColor],
-        ['Net Balance', formatCurrency(summary.netBalance), summary.netBalance >= 0 ? greenColor : redColor],
+        ['Total Expenses', formatCurrency(summary.totalExpenditure), redColor],
+        ['Net Balance', formatCurrency(summary.balance), summary.balance >= 0 ? greenColor : redColor],
         ['Available Budget', formatCurrency(summary.availableBudget), primaryColor]
       ];
       
