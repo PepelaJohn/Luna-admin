@@ -489,3 +489,88 @@ export const resetPassword = async ({
     );
   }
 };
+
+
+
+import { FinancialRecord } from '@/types/expenditure';
+import { 
+  ApiResponse, 
+  PaginatedResponse, 
+  FinancialStats, 
+  FinancialRecordFilters 
+} from '@/types/api';
+
+const API_BASE = '/api/financial-records';
+
+// financialRecordsApi.ts
+function normalizeForJson(data: Partial<FinancialRecord>) {
+  const out: any = { ...data };
+  if (out.date instanceof Date) out.date = out.date.toISOString();
+  return out;
+}
+
+function logPayload(label: string, payload: unknown) {
+  
+  console.debug(`[financialRecordsApi] ${label}`, payload);
+}
+
+export const financialRecordsApi = {
+  async create(
+    data: Partial<FinancialRecord>,
+  ): Promise<ApiResponse<FinancialRecord>> {
+    const payload = normalizeForJson(data);
+    logPayload("create payload (JSON)", payload);
+
+    const res = await fetch(API_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+
+  async getAll(filters?: FinancialRecordFilters): Promise<PaginatedResponse<FinancialRecord>> {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) params.append(k, String(v));
+      });
+    }
+    const res = await fetch(`${API_BASE}?${params.toString()}`);
+    return res.json();
+  },
+
+  async getById(id: string): Promise<ApiResponse<FinancialRecord>> {
+    const res = await fetch(`${API_BASE}/${id}`);
+    return res.json();
+  },
+
+  async update(
+    id: string,
+    data: Partial<FinancialRecord>,
+    keepExistingAttachments = true,
+  ): Promise<ApiResponse<FinancialRecord>> {
+    const payload = { ...normalizeForJson(data), keepExistingAttachments };
+    logPayload("update payload (JSON)", payload);
+
+    const res = await fetch(`${API_BASE}/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+
+  async delete(id: string): Promise<ApiResponse> {
+    const res = await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
+    return res.json();
+  },
+
+  async getStats(startDate?: string, endDate?: string): Promise<ApiResponse<FinancialStats>> {
+    const params = new URLSearchParams();
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+    const res = await fetch(`${API_BASE}/stats?${params.toString()}`);
+    return res.json();
+  },
+};

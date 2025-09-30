@@ -86,3 +86,55 @@ interface StatusStat {
 }
 
 
+
+// types/api.ts
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
+export interface FinancialStats {
+  summary: {
+    totalIncome: number;
+    totalExpenditure: number;
+    balance: number;
+    incomeCount: number;
+    expenditureCount: number;
+    averageIncome: number;
+    averageExpenditure: number;
+  };
+  categoryBreakdown: Array<{
+    category: string;
+    total: number;
+    count: number;
+  }>;
+  monthlyTrends: Array<{
+    year: number;
+    month: number;
+    type: 'income' | 'expenditure';
+    total: number;
+  }>;
+}
+
+export interface FinancialRecordFilters {
+  type?: 'income' | 'expenditure';
+  category?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+}
+

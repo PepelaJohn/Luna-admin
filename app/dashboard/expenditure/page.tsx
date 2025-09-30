@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Plus, Download, Filter, BarChart3, TrendingUp, TrendingDown, CheckCircle, Settings, Wallet } from "lucide-react";
-import { FinancialRecord, FinancialSummary } from "@/types/expenditure";
+import { FinancialRecord, FinancialSummary,  } from "@/types/expenditure";
 import { Expense, ExpenseFilters } from "@/types/expenditure";
 import ExpenseTable from "@/components/expenditure/ExpenseTable";
-import FinancialStats from "@/components/expenditure/FinancialStats";
-import ExpenseStats from "@/components/expenditure/ExpenseStats";
+import FinancialStatis from "@/components/expenditure/FinancialStats";
+// import ExpenseStats from "@/components/expenditure/ExpenseStats";
 import ExpenseFilterPanel from "@/components/expenditure/ExpenseFilterPanel";
 import BalanceChart from "@/components/expenditure/BalanceChart";
 import TabsNavigation from "@/components/expenditure/TabsNavigation";
@@ -47,24 +47,24 @@ export default function ExpenditureDashboard() {
       const expenseRecords = recordsData
         .filter(record => record.type === 'expenditure')
         .map(record => ({
-          id: record.id,
+          id: record._id,
           title: record.title,
           description: record.description,
           amount: record.amount,
           currency: record.currency,
           category: record.category,
           status: record.status,
-          dateIncurred: record.date,
-          dateSubmitted: record.dateSubmitted,
-          dateApproved: record.dateApproved,
-          datePaid: record.datePaid,
+          dateIncurred: record.date as unknown as string,
+          dateSubmitted: record.dateSubmitted as unknown as string,
+          dateApproved: record.dateApproved as unknown as string,
+          datePaid: record.datePaid as unknown as string,
           submittedBy: record.submittedBy,
           approvedBy: record.approvedBy,
           notes: record.notes,
-          createdAt: record.createdAt,
-          updatedAt: record.updatedAt,
+          createdAt: record.createdAt as unknown as string,
+          updatedAt: record.updatedAt as unknown as string,
         }));
-      setExpenses(expenseRecords);
+      setExpenses(expenseRecords as any);
       
       // Count pending records for approval badge
       const pending = recordsData.filter(record => record.status === 'pending');
@@ -204,13 +204,10 @@ export default function ExpenditureDashboard() {
 
       {/* Overview Stats */}
       {activeTab === 'overview' && summary && (
-        <FinancialStats summary={summary} />
+        <FinancialStatis summary={summary} />
       )}
 
-      {/* Expense Statistics - Only show on overview tab */}
-      {activeTab === 'overview' && (
-        <ExpenseStats expenses={expenses} />
-      )}
+     
 
       {/* Filters */}
       {(activeTab === 'overview' || activeTab === 'income' || activeTab === 'expenses') && (

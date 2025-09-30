@@ -1,22 +1,29 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import ExpenseForm from "@/components/expenditure/ExpenseForm";
 import { FinancialRecord } from "@/types/expenditure";
-import { getFinancialRecord, updateFinancialRecord, getFinancialSummary } from "@/lib/expenditure";
+import { 
+  getFinancialRecord, 
+  updateFinancialRecord, 
+  getFinancialSummary 
+} from "@/lib/expenditure";
+import { uploadMultipleToImgbb, validateFiles } from "@/lib/imgbb-upload";
 
 export default function EditExpensePage() {
-  const params = useParams();
   const router = useRouter();
+  const params = useParams();
   const id = params.id as string;
-  
+
   const [record, setRecord] = useState<FinancialRecord | null>(null);
-  const [availableBudget, setAvailableBudget] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availableBudget, setAvailableBudget] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<string>("");
 
   useEffect(() => {
     loadData();
@@ -25,39 +32,67 @@ export default function EditExpensePage() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [recordData, summaryData] = await Promise.all([
+      setError(null);
+
+      const [recordData, summary] = await Promise.all([
         getFinancialRecord(id),
         getFinancialSummary()
       ]);
+
+      if (!recordData) {
+        setError("Expense not found");
+        return;
+      }
+
       setRecord(recordData);
-      setAvailableBudget(summaryData.availableBudget);
-    } catch (error) {
-      console.error("Failed to load data:", error);
+      setAvailableBudget(summary.availableBudget);
+    } catch (error: any) {
+      console.error("Failed to load expense:", error);
+      setError(error.message || "Failed to load expense");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSubmit = async (data: Partial<FinancialRecord>, files: File[]) => {
-    if (!record) return;
-    
+    setIsSubmitting(true);
+    setError(null);
+    setUploadProgress("");
+
     try {
-      setIsSubmitting(true);
-      await updateFinancialRecord(record.id, data);
-      // Handle file uploads here
-      console.log('Files to upload:', files);
+      // Handle new file uploads
+      if (files.length > 0) {
+        const validation = validateFiles(files);
+        if (!validation.valid) {
+          throw new Error(validation.errors.join('\n'));
+        }
+
+        // Upload new files to ImgBB
+        setUploadProgress(`Uploading ${files.length} file(s)...`);
+        const uploadedAttachments = await uploadMultipleToImgbb(files);
+        
+        // Merge with existing attachments
+        const existingAttachments = record?.attachments || [];
+        data.attachments = [...existingAttachments, ...uploadedAttachments];
+      }
+
+      setUploadProgress("Updating expense...");
       
-      router.push(`/dashboard/expenditure/expenses/${record.id}`);
+      await updateFinancialRecord(id, data);
+      
+      // Redirect to expenses list on success
+      router.push("/dashboard/expenditure/expenses");
       router.refresh();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to update expense:", error);
-    } finally {
+      setError(error.message || "Failed to update expense. Please try again.");
       setIsSubmitting(false);
+      setUploadProgress("");
     }
   };
 
   const handleCancel = () => {
-    router.back();
+    router.push("/dashboard/expenditure/expenses");
   };
 
   if (isLoading) {
@@ -68,43 +103,70 @@ export default function EditExpensePage() {
     );
   }
 
-  if (!record) {
+  if (error || !record) {
     return (
-      <div className="text-center py-12">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Expense Record Not Found</h1>
-        <p className="text-gray-600 mb-6">The expense record you're trying to edit doesn't exist.</p>
-        <Link 
-          href="/dashboard/expenditure/expenses"
-          className="px-4 py-2 bg-gradient-to-r from-orange-400 to-orange-500 text-white rounded-lg hover:from-orange-500 hover:to-orange-600 transition-all"
-        >
-          Back to Expenses
-        </Link>
+      <div className="space-y-6">
+        <div className="flex items-center">
+          <Link 
+            href="/dashboard/expenditure/expenses"
+            className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ArrowLeft size={20} />
+            <span className="text-sm font-medium">Back to Expenses</span>
+          </Link>
+        </div>
+
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <h3 className="text-red-800 font-semibold mb-2">Error</h3>
+          <p className="text-red-600 mb-4">{error || "Expense not found"}</p>
+          <Link
+            href="/dashboard/expenditure/expenses"
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 inline-block"
+          >
+            Back to Expenses
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link
-          href={`/dashboard/expenditure/expenses/${record.id}`}
-          className="p-2 text-gray-400 hover:text-orange-400 hover:bg-gray-100 rounded-lg transition-colors"
+      {/* Return Button */}
+      <div className="flex items-center">
+        <Link 
+          href="/dashboard/expenditure/expenses"
+          className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft size={20} />
+          <span className="text-sm font-medium">Back to Expenses</span>
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Edit Expense</h1>
-          <p className="text-gray-600 mt-1">Update expense details</p>
-          <p className="text-sm text-green-600 mt-1">
-            Available Budget: ${availableBudget.toLocaleString()}
-          </p>
-        </div>
       </div>
+
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Edit Expense</h1>
+        <p className="text-gray-600 mt-1">Update expense details</p>
+      </div>
+
+      {/* Upload Progress */}
+      {uploadProgress && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <p className="text-blue-800 font-medium">{uploadProgress}</p>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <p className="text-red-800 font-medium">Error</p>
+          <p className="text-red-600 text-sm mt-1 whitespace-pre-line">{error}</p>
+        </div>
+      )}
 
       {/* Form */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <ExpenseForm 
+        <ExpenseForm
           record={record}
           type="expenditure"
           onSubmit={handleSubmit}

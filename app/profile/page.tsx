@@ -57,8 +57,6 @@ const ProfilePage = () => {
     security: useRef<HTMLDivElement | null>(null),
   };
 
-  // imgbb API configuration
-  const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY || "YOUR_IMGBB_API_KEY";
 
   const profileMenuItems = [
     {
@@ -71,6 +69,10 @@ const ProfilePage = () => {
       danger: true,
     },
   ];
+  // imgbb API configuration
+  const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY || "YOUR_IMGBB_API_KEY";
+
+  
 
   // Function to upload image to imgbb
   const uploadToImgbb = async (file: File): Promise<string> => {

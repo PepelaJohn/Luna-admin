@@ -1,85 +1,10 @@
 import { Expense, Budget, ExpenseCategory, Income, BalanceSummary } from '@/types/expenditure';
 import API from './api';
-
+import { FinancialRecord } from '@/types/expenditure';
+import { financialRecordsApi } from '@/lib/api';
 // Mock data -  API calls
 let expenses: Expense[] = [
-  {
-    id: '1',
-    title: 'Office Supplies',
-    description: 'Purchased stationery for team',
-    amount: 250.75,
-    currency: 'USD',
-    category: 'Office',
-    status: 'approved',
-    dateIncurred: new Date('2023-10-15'),
-    dateSubmitted: new Date('2023-10-16'),
-    dateApproved: new Date('2023-10-17'),
-    submittedBy: 'admin@example.com',
-    receiptUrl: '/receipts/office-supplies.pdf',
-    createdAt: new Date('2023-10-16'),
-    updatedAt: new Date('2023-10-17'),
-  },
-  {
-    id: '2',
-    title: 'Team Lunch',
-    description: 'Monthly team building lunch',
-    amount: 420.5,
-    currency: 'USD',
-    category: 'Team Building',
-    status: 'pending',
-    dateIncurred: new Date('2023-10-20'),
-    dateSubmitted: new Date('2023-10-21'),
-    submittedBy: 'manager@example.com',
-    createdAt: new Date('2023-10-21'),
-    updatedAt: new Date('2023-10-21'),
-  },
-  {
-    id: '3',
-    title: 'Software Subscription',
-    description: 'Annual subscription for design software',
-    amount: 1200,
-    currency: 'USD',
-    category: 'Software',
-    status: 'paid',
-    dateIncurred: new Date('2023-10-01'),
-    dateSubmitted: new Date('2023-10-02'),
-    dateApproved: new Date('2023-10-03'),
-    datePaid: new Date('2023-10-05'),
-    submittedBy: 'admin@example.com',
-    receiptUrl: '/receipts/software-subscription.pdf',
-    createdAt: new Date('2023-10-02'),
-    updatedAt: new Date('2023-10-05'),
-  },
-  {
-    id: '4',
-    title: 'Business Travel',
-    description: 'Flight and accommodation for conference',
-    amount: 1850,
-    currency: 'USD',
-    category: 'Travel',
-    status: 'approved',
-    dateIncurred: new Date('2023-10-18'),
-    dateSubmitted: new Date('2023-10-19'),
-    dateApproved: new Date('2023-10-20'),
-    submittedBy: 'sales@example.com',
-    receiptUrl: '/receipts/travel-expenses.pdf',
-    createdAt: new Date('2023-10-19'),
-    updatedAt: new Date('2023-10-20'),
-  },
-  {
-    id: '5',
-    title: 'Marketing Materials',
-    description: 'Brochures and promotional items',
-    amount: 750,
-    currency: 'USD',
-    category: 'Marketing',
-    status: 'draft',
-    dateIncurred: new Date('2023-10-22'),
-    dateSubmitted: new Date('2023-10-22'),
-    submittedBy: 'marketing@example.com',
-    createdAt: new Date('2023-10-22'),
-    updatedAt: new Date('2023-10-22'),
-  },
+
 ];
 
 let budgets: Budget[] = [
@@ -685,356 +610,9 @@ export const deleteReceiptFile = async (expenseId: string): Promise<{ success: b
 
 
 
-export const getFinancialRecords = async (filters?: any): Promise<any[]> => {
-  await delay(500);
-  
-  // Combine expenses and incomes into financial records
-  const expenseRecords = expenses.map(expense => ({
-    id: expense.id,
-    title: expense.title,
-    description: expense.description,
-    amount: expense.amount,
-    currency: expense.currency,
-    category: expense.category,
-    type: 'expenditure' as const,
-    status: expense.status,
-    date: expense.dateIncurred,
-    dateSubmitted: expense.dateSubmitted,
-    dateApproved: expense.dateApproved,
-    datePaid: expense.datePaid,
-    submittedBy: expense.submittedBy,
-    approvedBy: expense.approvedBy,
-    createdAt: expense.createdAt,
-    updatedAt: expense.updatedAt,
-  }));
 
-  const incomeRecords = incomes.map(income => ({
-    id: income.id,
-    title: income.title,
-    description: income.description,
-    amount: income.amount,
-    currency: income.currency,
-    category: income.source,
-    type: 'income' as const,
-    status: 'paid' as const, // Incomes are typically paid when received
-    date: income.dateReceived,
-    dateSubmitted: income.dateReceived,
-    dateApproved: income.dateReceived,
-    datePaid: income.dateReceived,
-    submittedBy: income.receivedBy,
-    approvedBy: income.receivedBy,
-    createdAt: income.createdAt,
-    updatedAt: income.updatedAt,
-  }));
 
-  let records = [...incomeRecords, ...expenseRecords];
-  
-  if (!filters) return records;
-  
-  let filtered = [...records];
-  
-  if (filters.status) {
-    filtered = filtered.filter(record => record.status === filters.status);
-  }
-  
-  if (filters.category) {
-    filtered = filtered.filter(record => record.category === filters.category);
-  }
-  
-  if (filters.type) {
-    filtered = filtered.filter(record => record.type === filters.type);
-  }
-  
-  if (filters.search) {
-    const searchLower = filters.search.toLowerCase();
-    filtered = filtered.filter(record => 
-      record.title.toLowerCase().includes(searchLower) ||
-      (record.description?.toLowerCase().includes(searchLower) ?? false)
-    );
-  }
-  
-  return filtered;
-};
 
-export const getFinancialRecord = async (id: string): Promise<any | null> => {
-  await delay(300);
-  
-  // Check expenses first
-  const expense = expenses.find(expense => expense.id === id);
-  if (expense) {
-    return {
-      id: expense.id,
-      title: expense.title,
-      description: expense.description,
-      amount: expense.amount,
-      currency: expense.currency,
-      category: expense.category,
-      type: 'expenditure' as const,
-      status: expense.status,
-      date: expense.dateIncurred,
-      dateSubmitted: expense.dateSubmitted,
-      dateApproved: expense.dateApproved,
-      datePaid: expense.datePaid,
-      submittedBy: expense.submittedBy,
-      approvedBy: expense.approvedBy,
-      createdAt: expense.createdAt,
-      updatedAt: expense.updatedAt,
-    };
-  }
-  
-  // Check incomes
-  const income = incomes.find(income => income.id === id);
-  if (income) {
-    return {
-      id: income.id,
-      title: income.title,
-      description: income.description,
-      amount: income.amount,
-      currency: income.currency,
-      category: income.source,
-      type: 'income' as const,
-      status: 'paid' as const,
-      date: income.dateReceived,
-      dateSubmitted: income.dateReceived,
-      dateApproved: income.dateReceived,
-      datePaid: income.dateReceived,
-      submittedBy: income.receivedBy,
-      approvedBy: income.receivedBy,
-      createdAt: income.createdAt,
-      updatedAt: income.updatedAt,
-    };
-  }
-  
-  return null;
-};
-
-export const createFinancialRecord = async (recordData: Partial<any>): Promise<any> => {
-  await delay(800);
-  
-  if (recordData.type === 'income') {
-    const income: Income = {
-      id: `inc_${Date.now()}`,
-      title: recordData.title || '',
-      description: recordData.description,
-      amount: recordData.amount || 0,
-      currency: recordData.currency || 'USD',
-      source: recordData.category || 'other',
-      dateReceived: recordData.date || new Date(),
-      receivedBy: 'current-user@example.com',
-      reference: recordData.reference,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    incomes.unshift(income);
-    return {
-      id: income.id,
-      title: income.title,
-      description: income.description,
-      amount: income.amount,
-      currency: income.currency,
-      category: income.source,
-      type: 'income' as const,
-      status: 'paid' as const,
-      date: income.dateReceived,
-      dateSubmitted: income.dateReceived,
-      dateApproved: income.dateReceived,
-      datePaid: income.dateReceived,
-      submittedBy: income.receivedBy,
-      approvedBy: income.receivedBy,
-      createdAt: income.createdAt,
-      updatedAt: income.updatedAt,
-    };
-  } else {
-    // Default to expense
-    const expense: Expense = {
-      id: Date.now().toString(),
-      title: recordData.title || '',
-      description: recordData.description || '',
-      amount: recordData.amount || 0,
-      currency: recordData.currency || 'USD',
-      category: recordData.category || 'Other',
-      status: 'draft',
-      dateIncurred: recordData.date || new Date(),
-      dateSubmitted: new Date(),
-      submittedBy: 'current-user@example.com',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    expenses.push(expense);
-    return {
-      id: expense.id,
-      title: expense.title,
-      description: expense.description,
-      amount: expense.amount,
-      currency: expense.currency,
-      category: expense.category,
-      type: 'expenditure' as const,
-      status: expense.status,
-      date: expense.dateIncurred,
-      dateSubmitted: expense.dateSubmitted,
-      dateApproved: expense.dateApproved,
-      datePaid: expense.datePaid,
-      submittedBy: expense.submittedBy,
-      approvedBy: expense.approvedBy,
-      createdAt: expense.createdAt,
-      updatedAt: expense.updatedAt,
-    };
-  }
-};
-
-export const updateFinancialRecord = async (id: string, recordData: Partial<any>): Promise<any | null> => {
-  await delay(600);
-  
-  // Check if it's an expense
-  const expenseIndex = expenses.findIndex(expense => expense.id === id);
-  if (expenseIndex !== -1) {
-    expenses[expenseIndex] = {
-      ...expenses[expenseIndex],
-      ...recordData,
-      updatedAt: new Date()
-    };
-    const expense = expenses[expenseIndex];
-    return {
-      id: expense.id,
-      title: expense.title,
-      description: expense.description,
-      amount: expense.amount,
-      currency: expense.currency,
-      category: expense.category,
-      type: 'expenditure' as const,
-      status: expense.status,
-      date: expense.dateIncurred,
-      dateSubmitted: expense.dateSubmitted,
-      dateApproved: expense.dateApproved,
-      datePaid: expense.datePaid,
-      submittedBy: expense.submittedBy,
-      approvedBy: expense.approvedBy,
-      createdAt: expense.createdAt,
-      updatedAt: expense.updatedAt,
-    };
-  }
-  
-  // Check if it's an income
-  const incomeIndex = incomes.findIndex(income => income.id === id);
-  if (incomeIndex !== -1) {
-    incomes[incomeIndex] = {
-      ...incomes[incomeIndex],
-      ...recordData,
-      updatedAt: new Date()
-    } as Income;
-    const income = incomes[incomeIndex];
-    return {
-      id: income.id,
-      title: income.title,
-      description: income.description,
-      amount: income.amount,
-      currency: income.currency,
-      category: income.source,
-      type: 'income' as const,
-      status: 'paid' as const,
-      date: income.dateReceived,
-      dateSubmitted: income.dateReceived,
-      dateApproved: income.dateReceived,
-      datePaid: income.dateReceived,
-      submittedBy: income.receivedBy,
-      approvedBy: income.receivedBy,
-      createdAt: income.createdAt,
-      updatedAt: income.updatedAt,
-    };
-  }
-  
-  return null;
-};
-
-export const updateRecordStatus = async (id: string, status: string, approvedBy?: string): Promise<any | null> => {
-  await delay(500);
-  
-  // Check if it's an expense
-  const expense = expenses.find(expense => expense.id === id);
-  if (expense) {
-    expense.status = status as any;
-    expense.updatedAt = new Date();
-    
-    if (status === 'approved') {
-      expense.dateApproved = new Date();
-      expense.approvedBy = approvedBy || 'admin@example.com';
-    } else if (status === 'paid') {
-      expense.datePaid = new Date();
-    }
-    
-    return {
-      id: expense.id,
-      title: expense.title,
-      description: expense.description,
-      amount: expense.amount,
-      currency: expense.currency,
-      category: expense.category,
-      type: 'expenditure' as const,
-      status: expense.status,
-      date: expense.dateIncurred,
-      dateSubmitted: expense.dateSubmitted,
-      dateApproved: expense.dateApproved,
-      datePaid: expense.datePaid,
-      submittedBy: expense.submittedBy,
-      approvedBy: expense.approvedBy,
-      createdAt: expense.createdAt,
-      updatedAt: expense.updatedAt,
-    };
-  }
-  
-  // Incomes typically don't have status changes in this system
-  const income = incomes.find(income => income.id === id);
-  if (income) {
-    income.updatedAt = new Date();
-    return {
-      id: income.id,
-      title: income.title,
-      description: income.description,
-      amount: income.amount,
-      currency: income.currency,
-      category: income.source,
-      type: 'income' as const,
-      status: 'paid' as const,
-      date: income.dateReceived,
-      dateSubmitted: income.dateReceived,
-      dateApproved: income.dateReceived,
-      datePaid: income.dateReceived,
-      submittedBy: income.receivedBy,
-      approvedBy: income.receivedBy,
-      createdAt: income.createdAt,
-      updatedAt: income.updatedAt,
-    };
-  }
-  
-  return null;
-};
-
-// Financial Summary (NEW)
-export const getFinancialSummary = async (): Promise<any> => {
-  await delay(400);
-  
-  const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
-  
-  const totalExpenses = expenses
-    .filter(expense => expense.status === 'paid' || expense.status === 'approved')
-    .reduce((sum, expense) => sum + expense.amount, 0);
-  
-  const pendingExpenses = expenses
-    .filter(expense => expense.status === 'pending')
-    .reduce((sum, expense) => sum + expense.amount, 0);
-  
-  const netBalance = totalIncome - totalExpenses;
-  const availableBudget = totalIncome - totalExpenses - pendingExpenses;
-
-  return {
-    totalIncome,
-    totalExpenses,
-    netBalance,
-    pendingIncome: 0, // Incomes are immediately paid in this system
-    pendingExpenses,
-    availableBudget
-  };
-};
 
 // Utility functions (NEW)
 export const getAvailableBudget = async (): Promise<number> => {
@@ -1042,25 +620,7 @@ export const getAvailableBudget = async (): Promise<number> => {
   return summary.availableBudget;
 };
 
-export const deleteFinancialRecord = async (id: string): Promise<boolean> => {
-  await delay(400);
-  
-  // Check expenses
-  const expenseIndex = expenses.findIndex(expense => expense.id === id);
-  if (expenseIndex !== -1) {
-    expenses.splice(expenseIndex, 1);
-    return true;
-  }
-  
-  // Check incomes
-  const incomeIndex = incomes.findIndex(income => income.id === id);
-  if (incomeIndex !== -1) {
-    incomes.splice(incomeIndex, 1);
-    return true;
-  }
-  
-  return false;
-};
+
 
 // File upload functions (mock for now)
 export const uploadFiles = async (files: File[]): Promise<any[]> => {
@@ -1075,3 +635,233 @@ export const uploadFiles = async (files: File[]): Promise<any[]> => {
     uploadedAt: new Date()
   }));
 };
+
+
+
+
+// real api calls
+
+// lib/expenditure.ts
+
+
+export interface GetRecordsOptions {
+  type?: 'income' | 'expenditure';
+  category?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface FinancialSummary {
+  totalIncome: number;
+  totalExpenditure: number;
+  balance: number;
+  availableBudget: number;
+  incomeCount: number;
+  expenditureCount: number;
+}
+
+
+export interface GetRecordsOptions {
+  type?: 'income' | 'expenditure';
+  category?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface FinancialSummary {
+  totalIncome: number;
+  totalExpenditure: number;
+  balance: number;
+  availableBudget: number;
+  incomeCount: number;
+  expenditureCount: number;
+}
+
+/**
+ * Fetch financial records with optional filters
+ */
+export async function getFinancialRecords(
+  options: GetRecordsOptions = {}
+): Promise<FinancialRecord[]> {
+  try {
+    const response = await financialRecordsApi.getAll(options);
+    
+    if (!response.success) {
+      throw new Error((response as any).error || 'Failed to fetch records');
+    }
+    
+    return response.data || [];
+  } catch (error) {
+    console.error('Error fetching financial records:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch a single financial record by ID
+ */
+export async function getFinancialRecord(id: string): Promise<FinancialRecord | null> {
+  try {
+    const response = await financialRecordsApi.getById(id);
+    
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to fetch record');
+    }
+    
+    return response.data || null;
+  } catch (error) {
+    console.error('Error fetching financial record:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new financial record
+ */
+export async function createFinancialRecord(
+  data: Partial<FinancialRecord>
+): Promise<FinancialRecord> {
+  try {
+    const response = await financialRecordsApi.create(data);
+    
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to create record');
+    }
+    
+    return response.data as unknown as FinancialRecord;
+  } catch (error) {
+    console.error('Error creating financial record:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update a financial record
+ */
+export async function updateFinancialRecord(
+  id: string,
+  data: Partial<FinancialRecord>,
+  keepExistingAttachments: boolean = true
+): Promise<FinancialRecord> {
+  try {
+    const response = await financialRecordsApi.update(
+      id,
+      data,
+      keepExistingAttachments
+    );
+    
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to update record');
+    }
+    
+    return response.data as unknown as FinancialRecord;
+  } catch (error) {
+    console.error('Error updating financial record:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a financial record
+ */
+export async function deleteFinancialRecord(id: string): Promise<void> {
+  try {
+    const response = await financialRecordsApi.delete(id);
+    
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to delete record');
+    }
+  } catch (error) {
+    console.error('Error deleting financial record:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get financial summary statistics
+ */
+export async function getFinancialSummary(
+  startDate?: string,
+  endDate?: string
+): Promise<FinancialSummary> {
+  try {
+    const response = await financialRecordsApi.getStats(startDate, endDate);
+    
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to fetch statistics');
+    }
+    
+    const { summary } = response.data;
+    
+    return {
+      totalIncome: summary.totalIncome,
+      totalExpenditure: summary.totalExpenditure,
+      balance: summary.balance,
+      availableBudget: summary.balance, // Balance is available budget
+      incomeCount: summary.incomeCount,
+      expenditureCount: summary.expenditureCount,
+    };
+  } catch (error) {
+    console.error('Error fetching financial summary:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get category breakdown for expenses
+ */
+export async function getCategoryBreakdown(
+  startDate?: string,
+  endDate?: string
+) {
+  try {
+    const response = await financialRecordsApi.getStats(startDate, endDate);
+    
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to fetch statistics');
+    }
+    
+    return response.data.categoryBreakdown;
+  } catch (error) {
+    console.error('Error fetching category breakdown:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update a financial record's status
+ */
+export async function updateRecordStatus(
+  id: string,
+  status: 'draft' | 'pending' | 'approved' | 'rejected' | 'paid'
+): Promise<FinancialRecord> {
+  try {
+    const updateData: any = { status };
+    
+    // Add timestamp fields based on status
+    if (status === 'approved') {
+      updateData.dateApproved = new Date();
+      // TODO: Add approvedBy from current user
+    } else if (status === 'paid') {
+      updateData.datePaid = new Date();
+    } else if (status === 'pending') {
+      updateData.dateSubmitted = new Date();
+      // TODO: Add submittedBy from current user
+    }
+    
+    const response = await financialRecordsApi.update(id, updateData, true);
+    
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to update status');
+    }
+    
+    return response.data as unknown as FinancialRecord;
+  } catch (error) {
+    console.error('Error updating record status:', error);
+    throw error;
+  }
+}

@@ -7,7 +7,7 @@ import { FinancialRecord } from "@/types/expenditure";
 import ExpenseTable from "@/components/expenditure/ExpenseTable";
 import ExpenseFilterPanel from "@/components/expenditure/ExpenseFilterPanel";
 import ExportDropdown from "@/components/expenditure/ExportDropdown";
-import { getFinancialRecords, getFinancialSummary } from "@/lib/expenditure";
+import { getFinancialRecords, getFinancialSummary, deleteFinancialRecord } from "@/lib/expenditure";
 
 export default function ExpensesPage() {
   const [records, setRecords] = useState<FinancialRecord[]>([]);
@@ -16,6 +16,7 @@ export default function ExpensesPage() {
   const [filters, setFilters] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -28,14 +29,18 @@ export default function ExpensesPage() {
   const loadData = async () => {
     try {
       setIsLoading(true);
+      setError(null);
+      
       const [recordsData, summaryData] = await Promise.all([
         getFinancialRecords({ type: 'expenditure' }),
         getFinancialSummary()
       ]);
+      
       setRecords(recordsData);
       setAvailableBudget(summaryData.availableBudget);
     } catch (error) {
       console.error("Failed to load data:", error);
+      setError("Failed to load expenses. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -63,10 +68,56 @@ export default function ExpensesPage() {
     setFilteredRecords(filtered);
   };
 
+  const handleDeleteRecord = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this expense? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      await deleteFinancialRecord(id);
+      
+      // Update local state
+      setRecords(prev => prev.filter(record => record._id !== id));
+      
+      // Reload summary to update available budget
+      const summaryData = await getFinancialSummary();
+      setAvailableBudget(summaryData.availableBudget);
+      
+      // Show success message (optional - you could add a toast notification here)
+      alert("Expense deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete expense:", error);
+      alert("Failed to delete expense. Please try again.");
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, status: FinancialRecord['status']) => {
+    // This would require adding a status field to the API
+    // For now, you can implement this if you add status to your schema
+    console.log("Update status:", id, status);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <h3 className="text-red-800 font-semibold mb-2">Error Loading Expenses</h3>
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={loadData}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -130,8 +181,14 @@ export default function ExpensesPage() {
 
       {/* Expenses Table */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Expense Records</h2>
-        <ExpenseTable records={filteredRecords} />
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Expense Records ({filteredRecords.length})
+        </h2>
+        <ExpenseTable 
+          records={filteredRecords}
+          onUpdateStatus={handleUpdateStatus}
+          onDeleteRecord={handleDeleteRecord}
+        />
       </div>
     </div>
   );

@@ -36,7 +36,7 @@ export default function ExpenseForm({
     title: record?.title || "",
     description: record?.description || "",
     amount: record?.amount || 0,
-    currency: record?.currency || "USD",
+    currency: record?.currency || "KES",
     category: record?.category || "",
     date: record?.date ? new Date(record.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     notes: record?.notes || "",
@@ -63,7 +63,7 @@ export default function ExpenseForm({
     
     onSubmit({
       ...formData,
-      date: new Date(formData.date),
+      date: new Date(formData.date).toISOString(),
       type: type,
     }, files);
   };
@@ -76,7 +76,7 @@ export default function ExpenseForm({
     setShowBudgetWarning(false);
     onSubmit({
       ...formData,
-      date: new Date(formData.date),
+      date: new Date(formData.date).toISOString(),
       type: type,
     }, files);
   };
@@ -126,7 +126,7 @@ export default function ExpenseForm({
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                $
+                KES
               </span>
               <input
                 type="number"
@@ -137,13 +137,13 @@ export default function ExpenseForm({
                 required
                 min="0"
                 step="0.01"
-                className="w-full pl-8 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full pl-10 pr- py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 placeholder="0.00"
               />
             </div>
             {type === 'expenditure' && availableBudget !== undefined && (
               <p className="text-sm text-gray-500 mt-1">
-                Available budget: ${availableBudget.toLocaleString()}
+                Available budget: KES {availableBudget.toLocaleString()}
               </p>
             )}
           </div>

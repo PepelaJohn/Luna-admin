@@ -1,5 +1,5 @@
 export interface FinancialRecord {
-  id: string;
+  _id: string;
   title: string;
   description: string;
   amount: number;
@@ -7,25 +7,22 @@ export interface FinancialRecord {
   category: string;
   type: 'income' | 'expenditure';
   status: 'draft' | 'pending' | 'approved' | 'rejected' | 'paid' | 'archived';
-  date: Date;
-  dateSubmitted: Date;
+  date: string;
+  dateSubmitted: Date ;
   dateApproved?: Date;
   datePaid?: Date;
   submittedBy: string;
   approvedBy?: string;
-  attachments?: Attachment[];
+  attachments: Attachment[];
   notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Attachment {
-  id: string;
-  name: string;
+  filename: string;
   url: string;
-  type: string;
-  size: number;
-  uploadedAt: Date;
+  uploadedAt: Date | string;
 }
 
 export interface Budget {
@@ -67,10 +64,9 @@ export interface ExpenseFilters {
 
 export interface FinancialSummary {
   totalIncome: number;
-  totalExpenses: number;
-  netBalance: number;
-  pendingIncome: number;
-  pendingExpenses: number;
+  totalExpenditure: number;
+  balance: number;
+
   availableBudget: number;
 }
 
@@ -82,17 +78,17 @@ export interface Expense {
   currency: string;
   category: string;
   status: 'draft' | 'pending' | 'approved' | 'rejected' | 'paid' | 'archived';
-  dateIncurred: Date;
-  dateSubmitted: Date;
-  dateApproved?: Date;
-  datePaid?: Date;
+  dateIncurred: Date  ;
+  dateSubmitted: Date  ;
+  dateApproved?: Date  ;
+  datePaid?: Date  ;
   submittedBy: string;
   approvedBy?: string;
   receiptUrl?: string;
   budgetId?: string;
   notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date  ;
+  updatedAt: Date  ;
 }
 
 export interface ExpenseCategory {

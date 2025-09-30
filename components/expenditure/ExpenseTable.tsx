@@ -21,7 +21,9 @@ export default function ExpenseTable({
   showType = false,
   compact = false 
 }: ExpenseTableProps) {
+  console.log(records)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('en-US', {
@@ -38,6 +40,17 @@ export default function ExpenseTable({
     }).format(new Date(date));
   };
 
+  const handleDelete = async (id: string) => {
+    if (!onDeleteRecord) return;
+    
+    setDeletingId(id);
+    try {
+      await onDeleteRecord(id);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -48,16 +61,21 @@ export default function ExpenseTable({
             <th className="px-4 py-3 text-left text-gray-600 font-medium">Amount</th>
             <th className="px-4 py-3 text-left text-gray-600 font-medium">Category</th>
             <th className="px-4 py-3 text-left text-gray-600 font-medium">Date</th>
-            <th className="px-4 py-3 text-left text-gray-600 font-medium">Status</th>
+            {!compact && <th className="px-4 py-3 text-left text-gray-600 font-medium">Status</th>}
             {!compact && <th className="px-4 py-3 text-left text-gray-600 font-medium">Actions</th>}
           </tr>
         </thead>
         <tbody>
           {records.map((record) => (
-            <tr key={record.id} className="border-b border-gray-200 hover:bg-gray-50">
+            <tr 
+              key={record._id} 
+              className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${
+                deletingId === record._id ? 'opacity-50' : ''
+              }`}
+            >
               {showType && (
                 <td className="px-4 py-3">
-                  <div className={`p-1 rounded-full ${
+                  <div className={`inline-flex p-1.5 rounded-full ${
                     record.type === 'income' ? 'bg-green-100' : 'bg-red-100'
                   }`}>
                     {record.type === 'income' ? (
@@ -77,7 +95,7 @@ export default function ExpenseTable({
                 </div>
               </td>
               <td className="px-4 py-3">
-                <span className={`font-medium ${
+                <span className={`font-semibold ${
                   record.type === 'income' ? 'text-green-600' : 'text-red-600'
                 }`}>
                   {record.type === 'income' ? '+' : '-'}{formatCurrency(record.amount, record.currency)}
@@ -89,26 +107,44 @@ export default function ExpenseTable({
                 </span>
               </td>
               <td className="px-4 py-3 text-gray-600">
-                {formatDate(record.date)}
+                {formatDate(record.date as any)}
               </td>
-              <td className="px-4 py-3">
-                <StatusBadge status={record.status} />
-              </td>
+              {!compact && (
+                <td className="px-4 py-3">
+                  {record.status ? (
+                    <StatusBadge status={record.status} />
+                  ) : (
+                    <span className="text-gray-400 text-sm">N/A</span>
+                  )}
+                </td>
+              )}
               {!compact && (
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <Link
-                      href={`/dashboard/expenditure/${record.type === 'income' ? 'income' : 'expenses'}/${record.id}`}
-                      className="p-1.5 text-gray-400 hover:text-orange-400 hover:bg-gray-100 rounded"
+                      href={`/dashboard/expenditure/${record.type === 'income' ? 'income' : 'expenses'}/${record._id}`}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      title="View Details"
                     >
                       <Eye size={16} />
                     </Link>
                     <Link
-                      href={`/dashboard/expenditure/${record.type === 'income' ? 'income' : 'expenses'}/${record.id}/edit`}
-                      className="p-1.5 text-gray-400 hover:text-orange-400 hover:bg-gray-100 rounded"
+                      href={`/dashboard/expenditure/${record.type === 'income' ? 'income' : 'expenses'}/${record._id}/edit`}
+                      className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                      title="Edit"
                     >
                       <Edit size={16} />
                     </Link>
+                    {onDeleteRecord && (
+                      <button
+                        onClick={() => handleDelete(record._id)}
+                        disabled={deletingId === record._id}
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
                 </td>
               )}
@@ -118,8 +154,14 @@ export default function ExpenseTable({
       </table>
       
       {records.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
-          No records found.
+        <div className="text-center py-12">
+          <div className="text-gray-400 mb-2">
+            <TrendingDown size={48} className="mx-auto opacity-50" />
+          </div>
+          <p className="text-gray-500 text-lg">No records found</p>
+          <p className="text-gray-400 text-sm mt-1">
+            Try adjusting your filters or create a new expense
+          </p>
         </div>
       )}
     </div>

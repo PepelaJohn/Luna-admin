@@ -50,7 +50,7 @@ export default function IncomeDetailPage() {
     
     try {
       setIsUpdating(true);
-      await updateRecordStatus(record.id, newStatus);
+      await updateRecordStatus(record._id, newStatus);
       await loadRecord(); // Reload the record data
     } catch (error) {
       console.error("Failed to update status:", error);
@@ -114,7 +114,7 @@ export default function IncomeDetailPage() {
           <p className="text-gray-600 mt-1">{record.description}</p>
         </div>
         <Link
-          href={`/dashboard/expenditure/income/${record.id}/edit`}
+          href={`/dashboard/expenditure/income/${record._id}/edit`}
           className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
         >
           <Edit size={18} />
@@ -136,7 +136,7 @@ export default function IncomeDetailPage() {
                   <span className="text-sm">Amount</span>
                 </div>
                 <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(record.amount, record.currency)}
+                  {formatCurrency(record.amount, "KES")}
                 </p>
               </div>
               
@@ -153,7 +153,7 @@ export default function IncomeDetailPage() {
                   <Calendar size={16} />
                   <span className="text-sm">Date Received</span>
                 </div>
-                <p className="text-gray-900">{formatDate(record.date)}</p>
+                <p className="text-gray-900">{formatDate(record.date as any)}</p>
               </div>
               
               <div className="space-y-1">
@@ -215,7 +215,7 @@ export default function IncomeDetailPage() {
                   </div>
                   <div>
                     <p className="text-gray-900">Created</p>
-                    <p className="text-sm text-gray-600">{formatDate(record.createdAt)}</p>
+                    <p className="text-sm text-gray-600">{formatDate(record.createdAt as any)}</p>
                   </div>
                 </div>
                 <StatusBadge status="draft" />
@@ -275,7 +275,7 @@ export default function IncomeDetailPage() {
             
             <div className="flex items-center justify-between mb-6">
               <StatusBadge status={record.status} />
-              <span className="text-sm text-gray-600">Updated {formatDate(record.updatedAt)}</span>
+              <span className="text-sm text-gray-600">Updated {formatDate(record.updatedAt as any)}</span>
             </div>
             
             {/* Status Actions */}
@@ -329,7 +329,7 @@ export default function IncomeDetailPage() {
               <div className="space-y-3">
                 {record.attachments.map((attachment) => (
                   <a
-                    key={attachment.id}
+                    key={attachment.url}
                     href={attachment.url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -337,7 +337,7 @@ export default function IncomeDetailPage() {
                   >
                     <div className="flex items-center gap-3">
                       <FileText size={16} className="text-gray-600" />
-                      <span className="text-sm text-gray-900">{attachment.name}</span>
+                      <span className="text-sm text-gray-900">{attachment.filename}</span>
                     </div>
                     <Download size={16} className="text-gray-400" />
                   </a>
