@@ -13,7 +13,24 @@ interface ExpenseFormProps {
   availableBudget?: number;
 }
 
-const categories = [
+// Income categories
+const incomeCategories = [
+  "Donations",
+  "Grants",
+  "Fundraising",
+  "Client Payment",
+  "Sales Revenue",
+  "Investment Returns",
+  "Membership Fees",
+  "Sponsorships",
+  "Consulting Fees",
+  "Service Income",
+  "Product Sales",
+  "Other"
+];
+
+// Expenditure categories
+const expenditureCategories = [
   "Office Supplies",
   "Team Building",
   "Travel",
@@ -21,6 +38,10 @@ const categories = [
   "Hardware",
   "Marketing",
   "Training",
+  "Utilities",
+  "Rent",
+  "Salaries",
+  "Professional Services",
   "Other"
 ];
 
@@ -43,6 +64,9 @@ export default function ExpenseForm({
   });
   const [files, setFiles] = useState<File[]>([]);
   const [showBudgetWarning, setShowBudgetWarning] = useState(false);
+
+  // Get the appropriate categories based on type
+  const categories = type === 'income' ? incomeCategories : expenditureCategories;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -137,7 +161,7 @@ export default function ExpenseForm({
                 required
                 min="0"
                 step="0.01"
-                className="w-full pl-10 pr- py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full pl-14 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 placeholder="0.00"
               />
             </div>
@@ -213,7 +237,11 @@ export default function ExpenseForm({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white rounded-lg transition-all disabled:opacity-50"
+            className={`px-6 py-2 bg-gradient-to-r ${
+              type === 'income' 
+                ? 'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700' 
+                : 'from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600'
+            } text-white rounded-lg transition-all disabled:opacity-50`}
           >
             {isSubmitting ? 'Saving...' : (record ? 'Update' : 'Create')} {type}
           </button>
@@ -226,7 +254,7 @@ export default function ExpenseForm({
           <div className="bg-white rounded-xl p-6 max-w-md mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Budget Exceeded</h3>
             <p className="text-gray-600 mb-4">
-              This expense of ${formData.amount.toLocaleString()} exceeds your available budget of ${availableBudget?.toLocaleString()}. Do you want to proceed anyway?
+              This expense of KES {formData.amount.toLocaleString()} exceeds your available budget of KES {availableBudget?.toLocaleString()}. Do you want to proceed anyway?
             </p>
             <div className="flex gap-3 justify-end">
               <button

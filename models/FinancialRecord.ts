@@ -50,16 +50,7 @@ const FinancialRecordSchema = new Schema<IFinancialRecord>(
     category: {
       type: String,
       required: [true, 'Category is required'],
-      enum: [
-        'Office Supplies',
-        'Team Building',
-        'Travel',
-        'Software',
-        'Hardware',
-        'Marketing',
-        'Training',
-        'Other',
-      ],
+      
     },
     date: {
       type: Date,
