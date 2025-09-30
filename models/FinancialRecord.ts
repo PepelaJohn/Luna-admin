@@ -10,6 +10,12 @@ export interface IFinancialRecord extends Document {
   date: Date;
   notes?: string;
   type: 'income' | 'expenditure';
+  status?: 'draft' | 'pending' | 'approved' | 'rejected' | 'paid';
+  submittedBy?: string;
+  approvedBy?: string;
+  dateSubmitted?: Date;
+  dateApproved?: Date;
+  datePaid?: Date;
   attachments?: {
     filename: string;
     url: string;
@@ -68,6 +74,28 @@ const FinancialRecordSchema = new Schema<IFinancialRecord>(
       required: [true, 'Type is required'],
       enum: ['income', 'expenditure'],
     },
+    status: {
+      type: String,
+      enum: ['draft', 'pending', 'approved', 'rejected', 'paid'],
+      default: 'pending',
+    },
+    submittedBy: {
+      type: String,
+      trim: true,
+    },
+    approvedBy: {
+      type: String,
+      trim: true,
+    },
+    dateSubmitted: {
+      type: Date,
+    },
+    dateApproved: {
+      type: Date,
+    },
+    datePaid: {
+      type: Date,
+    },
     attachments: [
       {
         filename: String,
@@ -87,6 +115,7 @@ const FinancialRecordSchema = new Schema<IFinancialRecord>(
 // Indexes for better query performance
 FinancialRecordSchema.index({ type: 1, date: -1 });
 FinancialRecordSchema.index({ category: 1 });
+FinancialRecordSchema.index({ status: 1 });
 
 export default mongoose.models.FinancialRecord ||
   mongoose.model<IFinancialRecord>('FinancialRecord', FinancialRecordSchema);
