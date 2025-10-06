@@ -174,7 +174,7 @@ export const exportToPDF = async (
       const summaryData: Array<[string, string, [number, number, number]]> = [
         ['Total Income', formatCurrency(summary.totalIncome), greenColor],
         ['Total Expenses', formatCurrency(summary.totalExpenditure), redColor],
-        ['Net Balance', formatCurrency(summary.balance), summary.balance >= 0 ? greenColor : redColor],
+        ['Net Balance', formatCurrency(summary.balance), summary.balance   >= 0 ? greenColor : redColor],
         ['Available Budget', formatCurrency(summary.availableBudget), primaryColor]
       ];
       
