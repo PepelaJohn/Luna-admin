@@ -108,20 +108,7 @@ const subscriberSchema = new Schema<ISubscriber, ISubscriberModel, ISubscriberMe
 }, {
   timestamps: { createdAt: 'subscribedAt', updatedAt: true },
   collection: 'subscribers',
-  toJSON: {
-    transform: function(doc, ret) {
-      delete ret.token;
-      delete ret.__v;
-      return ret;
-    }
-  },
-  toObject: {
-    transform: function(doc, ret) {
-      delete ret.token;
-      delete ret.__v;
-      return ret;
-    }
-  }
+  
 });
 
 

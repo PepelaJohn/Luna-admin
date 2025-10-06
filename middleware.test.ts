@@ -232,7 +232,7 @@ function createRedirectResponse(request: NextRequest, redirectPath: string) {
 // Enhanced matcher configuration
 export const config = {
   matcher: [
-    "/api/:path*",     
+    "/api/:path*",
     "/admin/:path*",
     "/dashboard/:path*",
     "/profile",
@@ -245,3 +245,9 @@ export const config = {
     "/robots.txt",
   ],
 };
+
+
+
+
+
+

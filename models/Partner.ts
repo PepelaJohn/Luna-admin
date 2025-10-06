@@ -148,3 +148,11 @@ PartnerSchema.pre('save', function(next) {
 });
 
 export default mongoose.models.Partner || mongoose.model<IPartner>('Partner', PartnerSchema);
+
+
+
+
+
+
+
+

@@ -14,6 +14,7 @@ import {
   HelpCircle,
   FileText,
   LucideWorkflow,
+  CreditCard, // Added for Expenditure icon
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -24,126 +25,141 @@ import Image from "next/image";
 interface SidebarProps {
   isSidebarOpen: boolean;
   onCloseSidebar: () => void;
-  setActiveTab:React.Dispatch<React.SetStateAction<string>>;
-  activeTab:string
+  setActiveTab: React.Dispatch<React.SetStateAction<string>>;
+  activeTab: string;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
   isSidebarOpen,
   onCloseSidebar,
   setActiveTab,
-  activeTab
+  activeTab,
 }) => {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  // const [activeTab, setActiveTab] = useState<string>("dashboard"); // Default to dashboard
   const { user, logout } = useAuth();
-const router = useRouter()
+  const router = useRouter();
+
   const sidebarItems = [
-    { 
-      id: "dashboard", 
-      label: "Dashboard", 
+    {
+      id: "dashboard",
+      label: "Dashboard",
       icon: BarChart3,
       description: "Overview & analytics",
-      href: "/"
+      href: "/",
     },
-    { 
-      id: "partners", 
-      label: "Partners", 
+    {
+      id: "partners",
+      label: "Partners",
       icon: Building2,
       description: "Manage partnerships",
-      
-      href: "/partners"
+      href: "/partners",
     },
-    { 
-      id: "subscribers", 
-      label: "Subscribers", 
+    {
+      id: "subscribers",
+      label: "Subscribers",
       icon: Mail,
       description: "Email list management",
-      href: "/subscribers"
+      href: "/subscribers",
     },
-    { 
-      id: "users", 
-      label: "Users", 
+    {
+      id: "users",
+      label: "Users",
       icon: Users,
       description: "User management",
-      href: "/users"
+      href: "/users",
+    },
+    // ADDED: Expenditure navigation item
+    {
+      id: "expenditure",
+      label: "Expenditure",
+      icon: CreditCard, // Using CreditCard icon for expenditure
+      description: "Manage expenses & budgets",
+      href: "/expenditure",
     },
     {
       id: "logs",
       label: "Activity Logs",
-      icon: FileText, 
+      icon: FileText,
       description: "System activity and audit trail",
-      href: "/logs"
+      href: "/logs",
     },
     {
       id: "tasks",
       label: "Tasks",
-      icon: LucideWorkflow, 
+      icon: LucideWorkflow,
       description: "Assigned tasks",
-      href: "/tasks"
+      href: "/tasks",
     },
   ];
 
   const profileMenuItems = [
-    { 
-      id: "profile", 
-      label: "My Profile", 
+    {
+      id: "profile",
+      label: "My Profile",
       icon: User,
-      action: () => {router.push('/profile')}
+      action: () => {
+        router.push("/profile");
+      },
     },
-    { 
-      id: "settings", 
-      label: "Settings", 
+    {
+      id: "settings",
+      label: "Settings",
       icon: Settings,
-      action: () => console.log("Settings clicked")
+      action: () => console.log("Settings clicked"),
     },
-    { 
-      id: "theme", 
-      label: isDarkMode ? "Light Mode" : "Dark Mode", 
+    {
+      id: "theme",
+      label: isDarkMode ? "Light Mode" : "Dark Mode",
       icon: isDarkMode ? Sun : Moon,
-      action: () => setIsDarkMode(!isDarkMode)
+      action: () => setIsDarkMode(!isDarkMode),
     },
-    { 
-      id: "help", 
-      label: "Help & Support", 
+    {
+      id: "help",
+      label: "Help & Support",
       icon: HelpCircle,
-      action: () => console.log("Help clicked")
+      action: () => console.log("Help clicked"),
     },
-    { 
-      id: "logout", 
-      label: "Sign Out", 
+    {
+      id: "logout",
+      label: "Sign Out",
       icon: LogOut,
-      action: () => { logout() },
-      danger: true
+      action: () => {
+        logout();
+      },
+      danger: true,
     },
   ];
 
   // Set active tab based on current URL
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const pathname = window.location.pathname;
-      
+
       // Handle different URL patterns
-      if (pathname === '/dashboard' || pathname === '/dashboard/') {
-        setActiveTab('dashboard');
-      } else if (pathname.includes('/partners')) {
-        setActiveTab('partners');
-      } else if (pathname.includes('/subscribers')) {
-        setActiveTab('subscribers');
-      } else if (pathname.includes('/users')) {
-        setActiveTab('users');
-      } else if (pathname.includes('/logs')) {
-        setActiveTab('logs');
+      if (pathname === "/dashboard" || pathname === "/dashboard/") {
+        setActiveTab("dashboard");
+      } else if (pathname.includes("/partners")) {
+        setActiveTab("partners");
+      } else if (pathname.includes("/subscribers")) {
+        setActiveTab("subscribers");
+      } else if (pathname.includes("/users")) {
+        setActiveTab("users");
+      } else if (pathname.includes("/expenditure")) {
+        // ADDED: Handle expenditure URL
+        setActiveTab("expenditure");
+      } else if (pathname.includes("/logs")) {
+        setActiveTab("logs");
       } else {
         // Fallback: try to extract from URL
-        const segments = pathname.split('/').filter(Boolean);
+        const segments = pathname.split("/").filter(Boolean);
         const lastSegment = segments[segments.length - 1];
-        const matchingItem = sidebarItems.find(item => 
-          item.id === lastSegment || item.href.includes(lastSegment)
+        const matchingItem = sidebarItems.find(
+          (item) =>
+            item.id === lastSegment || item.href.includes(lastSegment)
         );
-        setActiveTab(matchingItem?.id || 'dashboard');
+        setActiveTab(matchingItem?.id || "dashboard");
       }
     }
   }, []); // Remove activeTab from dependencies
@@ -151,13 +167,16 @@ const router = useRouter()
   // Close profile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target as Node)
+      ) {
         setProfileMenuOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Handle menu item clicks
@@ -190,7 +209,10 @@ const router = useRouter()
                 <span className="text-white font-bold text-lg">L</span>
               </div>
               <div>
-                <Link href={'/dashboard'} className="text-xl font-bold bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+                <Link
+                  href={"/dashboard"}
+                  className="text-xl font-bold bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent"
+                >
                   LUNA ADMIN
                 </Link>
                 <p className="text-xs text-slate-400">Management Portal</p>
@@ -208,7 +230,7 @@ const router = useRouter()
                 {sidebarItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
-                  
+
                   return (
                     <Link
                       href={`/dashboard${item.href}`}
@@ -217,9 +239,10 @@ const router = useRouter()
                       className={`
                         group w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl 
                         transition-all duration-200 relative overflow-hidden
-                        ${isActive
-                          ? "bg-gradient-to-r from-yellow-400/10 via-orange-500/10 to-red-500/10 text-white border-orange-500/30 shadow-lg"
-                          : "text-slate-300 hover:text-white hover:bg-slate-700/50"
+                        ${
+                          isActive
+                            ? "bg-gradient-to-r from-yellow-400/10 via-orange-500/10 to-red-500/10 text-white border-orange-500/30 shadow-lg"
+                            : "text-slate-300 hover:text-white hover:bg-slate-700/50"
                         }
                       `}
                     >
@@ -227,86 +250,98 @@ const router = useRouter()
                       {isActive && (
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-yellow-400 via-orange-500 to-red-500 rounded-r" />
                       )}
-                      
-                      <div className={`
+
+                      <div
+                        className={`
                         p-2 rounded-lg mr-3 transition-colors 
-                        ${isActive 
-                          ? "bg-gradient-to-r from-yellow-400/20 to-orange-500/20" 
-                          : "bg-slate-700/50 group-hover:bg-slate-600/50"
+                        ${
+                          isActive
+                            ? "bg-gradient-to-r from-yellow-400/20 to-orange-500/20"
+                            : "bg-slate-700/50 group-hover:bg-slate-600/50"
                         }
-                      `}>
+                      `}
+                      >
                         <Icon className="w-5 h-5" />
                       </div>
-                      
+
                       <div className="flex-1 text-left">
                         <div className="flex items-center justify-between">
                           <span className="font-medium">{item.label}</span>
-                         
                         </div>
-                        <p className="text-xs text-slate-400 mt-0.5">{item.description}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {item.description}
+                        </p>
                       </div>
                     </Link>
                   );
-
-              
                 })}
 
-<Link
-                      href={`/dashboard/notifications`}
-                     
-                    
-                      className={`
+                <Link
+                  href={`/dashboard/notifications`}
+                  className={`
                         group w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl 
                         transition-all duration-200 relative overflow-hidden text-slate-300 hover:text-white hover:bg-slate-700/50
                      
                       `}
-                    >
-                     
-                      
-                     
-                       <NotificationBell></NotificationBell>
-                    
-                      
-                      <div className="flex-1 text-left">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">Notifications</span>
-                         
-                        </div>
-                        <p className="text-xs text-slate-400 mt-0.5"></p>
-                      </div>
-                    </Link>
+                >
+                  <NotificationBell></NotificationBell>
+
+                  <div className="flex-1 text-left">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Notifications</span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5"></p>
+                  </div>
+                </Link>
               </div>
             </div>
           </div>
 
           {/* User Profile Section */}
-          <div className="relative border-t border-slate-700/50 bg-slate-900/80 backdrop-blur-sm" ref={profileMenuRef}>
+          <div
+            className="relative border-t border-slate-700/50 bg-slate-900/80 backdrop-blur-sm"
+            ref={profileMenuRef}
+          >
             <button
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
               className="w-full p-4 flex items-center gap-3 hover:bg-slate-800/50 transition-colors"
             >
               {/* Avatar */}
               <div className="relative">
-                
                 <div className="w-12 h-12 bg-gradient-to-r overflow-hidden from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-                  { user?.avatar ? <Image src={user.avatar} height={48} width={48} className="w-full h-full object-center object-contain" alt="user avatar"></Image>:
-                    <User className="w-6 h-6 text-white" />}
+                  {user?.avatar ? (
+                    <Image
+                      src={user.avatar}
+                      height={48}
+                      width={48}
+                      className="w-full h-full object-center object-contain"
+                      alt="user avatar"
+                    ></Image>
+                  ) : (
+                    <User className="w-6 h-6 text-white" />
+                  )}
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-slate-900 rounded-full"></div>
               </div>
 
               {/* User Info */}
               <div className="flex-1 text-left min-w-0">
-                <p className="font-medium text-white capitalize truncate">{user?.name || "User"}</p>
-                <p className="text-xs text-slate-400 lowercase truncate">{user?.email || ""}</p>
-                <p className="text-xs text-orange-400 capitalize font-medium">{user?.role || "Admin"}</p>
+                <p className="font-medium text-white capitalize truncate">
+                  {user?.name || "User"}
+                </p>
+                <p className="text-xs text-slate-400 lowercase truncate">
+                  {user?.email || ""}
+                </p>
+                <p className="text-xs text-orange-400 capitalize font-medium">
+                  {user?.role || "Admin"}
+                </p>
               </div>
 
               {/* Dropdown Arrow */}
-              <ChevronDown 
+              <ChevronDown
                 className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${
                   profileMenuOpen ? "rotate-180" : ""
-                }`} 
+                }`}
               />
             </button>
 
@@ -321,17 +356,28 @@ const router = useRouter()
                       className={`
                         w-full flex items-center gap-3 px-4 py-3 text-sm font-medium
                         transition-colors hover:bg-slate-700/50
-                        ${item.danger ? "text-red-400 hover:text-red-300" : "text-slate-300 hover:text-white"}
-                        ${index !== profileMenuItems.length - 1 ? "border-b border-slate-700/30" : ""}
+                        ${
+                          item.danger
+                            ? "text-red-400 hover:text-red-300"
+                            : "text-slate-300 hover:text-white"
+                        }
+                        ${
+                          index !== profileMenuItems.length - 1
+                            ? "border-b border-slate-700/30"
+                            : ""
+                        }
                       `}
                     >
-                      <div className={`
+                      <div
+                        className={`
                         p-1.5 rounded-lg
-                        ${item.danger 
-                          ? "bg-red-500/10 text-red-400" 
-                          : "bg-slate-700/50 text-slate-400"
+                        ${
+                          item.danger
+                            ? "bg-red-500/10 text-red-400"
+                            : "bg-slate-700/50 text-slate-400"
                         }
-                      `}>
+                      `}
+                      >
                         <item.icon className="w-4 h-4" />
                       </div>
                       <span className="flex-1 text-left">{item.label}</span>
