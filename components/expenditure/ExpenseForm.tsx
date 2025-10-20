@@ -64,15 +64,44 @@ export default function ExpenseForm({
   });
   const [files, setFiles] = useState<File[]>([]);
   const [showBudgetWarning, setShowBudgetWarning] = useState(false);
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
+  const [customCategory, setCustomCategory] = useState("");
 
   // Get the appropriate categories based on type
   const categories = type === 'income' ? incomeCategories : expenditureCategories;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    if (name === 'category') {
+      if (value === 'Other') {
+        setShowCustomCategory(true);
+        setFormData(prev => ({
+          ...prev,
+          category: ""
+        }));
+      } else {
+        setShowCustomCategory(false);
+        setCustomCategory("");
+        setFormData(prev => ({
+          ...prev,
+          category: value
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: name === 'amount' ? parseFloat(value) || 0 : value
+      }));
+    }
+  };
+
+  const handleCustomCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setCustomCategory(value);
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'amount' ? parseFloat(value) || 0 : value
+      category: value
     }));
   };
 
@@ -129,19 +158,43 @@ export default function ExpenseForm({
             <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
               Category *
             </label>
-            <select
-              id="category"
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            >
-              <option value="">Select a category</option>
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
+            {!showCustomCategory ? (
+              <select
+                id="category"
+                name="category"
+                value={formData.category || ""}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              >
+                <option value="">Select a category</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={customCategory}
+                  onChange={handleCustomCategoryChange}
+                  required
+                  placeholder="Enter custom category"
+                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCustomCategory(false);
+                    setCustomCategory("");
+                    setFormData(prev => ({ ...prev, category: "" }));
+                  }}
+                  className="text-sm text-gray-600 hover:text-gray-800 underline"
+                >
+                  Choose from existing categories
+                </button>
+              </div>
+            )}
           </div>
 
           <div>
