@@ -1,6 +1,6 @@
 // app/api/financial-records/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import FinancialRecord from '@/models/FinancialRecord';
+import FinancialRecord , {IFinancialRecord} from '@/models/FinancialRecord';
 import { connectDB } from '@/lib/db';
 
 interface RouteParams {
@@ -49,30 +49,39 @@ export async function PUT(
 const id = (await params).id
     const body = await request.json();
       console.log(body)
+
+      const existingRecord:IFinancialRecord | null = await FinancialRecord.findById(id);
+      if (!id || !existingRecord) {
+        return NextResponse.json(
+          { success: false, error: 'Financial record not found' },
+          { status: 404 }
+        );
+      }
     // Extract update data
+
+const originalStatus = existingRecord.status?.toLowerCase()
+const newstatus = body.status?.toLowerCase()
+const statusChanged = newstatus !== originalStatus
     const updateData: any = {
-      title: body.title,
-      description: body.description,
-      amount: parseFloat(body.amount),
-      currency: body.currency || 'USD',
-      category: body.category,
-      date: new Date(body.date),
-      notes: body.notes || '',
-      type: body.type,
+      title: body.title || existingRecord.title ,
+      description: body.description || existingRecord.description,
+      amount: parseFloat(body.amount) || existingRecord.amount,
+      currency: body.currency|| existingRecord.currency || 'USD',
+      category: body.category || existingRecord.category,
+      date: new Date(body.dateApproved) || existingRecord.date,
+      dateApproved: originalStatus !=='approved'&& newstatus === 'approved' ? new Date(body.dateApproved) : existingRecord.dateApproved,
+      notes: body.notes || existingRecord.notes || '',
+      type: body.type || existingRecord.type,
+      status:body.status || existingRecord.status
     };
 
     // Fetch existing record
-    const existingRecord = await FinancialRecord.findById(id);
-    if (!existingRecord) {
-      return NextResponse.json(
-        { success: false, error: 'Financial record not found' },
-        { status: 404 }
-      );
-    }
+    
 
     // Handle attachments
     const keepExisting = body.keepExistingAttachments !== false;
-    let attachments = keepExisting ? [...existingRecord.attachments] : [];
+    let attachments = keepExisting ? [...(existingRecord.attachments ?? [])] : [];
+
 
     // Add new attachments if provided
     if (body.attachments && Array.isArray(body.attachments)) {

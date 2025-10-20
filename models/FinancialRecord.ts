@@ -2,6 +2,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IFinancialRecord extends Document {
+  _id:string;
   title: string;
   description: string;
   amount: number;
