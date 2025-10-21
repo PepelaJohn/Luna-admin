@@ -54,7 +54,7 @@ async function updateFinancialRecordHandler(
     const userId = user._id;
 
     // Check authorization
-    if (user.role !== 'super_admin' && user.role !== 'admin') {
+    if (user.role !== 'super_admin' ) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized - Insufficient permissions' },
         { status: 403 }
