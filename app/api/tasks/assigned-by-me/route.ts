@@ -32,7 +32,7 @@ const getAssignedByMeTasks = async (request: NextRequest) => {
 
     // Build query filters
     const filters: any = {
-      'assignedBy.userId': new mongoose.Types.ObjectId(user.id)
+      'assignedBy.userId': new mongoose.Types.ObjectId(user._id)
     };
 
     if (status && status !== 'all') {
@@ -86,7 +86,7 @@ const getAssignedByMeTasks = async (request: NextRequest) => {
     const taskCounts = await Task.aggregate([
       {
         $match: {
-          'assignedBy.userId': new mongoose.Types.ObjectId(user.id)
+          'assignedBy.userId': new mongoose.Types.ObjectId(user._id)
         }
       },
       {
@@ -106,7 +106,7 @@ const getAssignedByMeTasks = async (request: NextRequest) => {
     const assignees = await Task.aggregate([
       {
         $match: {
-          'assignedBy.userId': new mongoose.Types.ObjectId(user.id)
+          'assignedBy.userId': new mongoose.Types.ObjectId(user._id)
         }
       },
       {

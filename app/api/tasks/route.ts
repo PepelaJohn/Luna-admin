@@ -65,24 +65,24 @@ const getTasks = async (request: NextRequest) => {
       if (assignedToMe && assignedByMe) {
         // Both assigned to me and by me
         userConditions.push(
-          { "assignedTo.userId": new mongoose.Types.ObjectId(user.id) },
-          { "assignedBy.userId": new mongoose.Types.ObjectId(user.id) }
+          { "assignedTo.userId": new mongoose.Types.ObjectId(user._id) },
+          { "assignedBy.userId": new mongoose.Types.ObjectId(user._id) }
         );
       } else if (assignedToMe) {
         // Only assigned to me
         userConditions.push({
-          "assignedTo.userId": new mongoose.Types.ObjectId(user.id),
+          "assignedTo.userId": new mongoose.Types.ObjectId(user._id),
         });
       } else if (assignedByMe) {
         // Only assigned by me
         userConditions.push({
-          "assignedBy.userId": new mongoose.Types.ObjectId(user.id),
+          "assignedBy.userId": new mongoose.Types.ObjectId(user._id),
         });
       } else {
         // Default: tasks assigned to me or by me
         userConditions.push(
-          { "assignedTo.userId": new mongoose.Types.ObjectId(user.id) },
-          { "assignedBy.userId": new mongoose.Types.ObjectId(user.id) }
+          { "assignedTo.userId": new mongoose.Types.ObjectId(user._id) },
+          { "assignedBy.userId": new mongoose.Types.ObjectId(user._id) }
         );
       }
 
@@ -252,7 +252,7 @@ const createTask = async (request: NextRequest) => {
     }
 
     // Prevent self-assignment
-    if (assignedToUserId_ === user.id) {
+    if (assignedToUserId_ === user._id) {
       return returnError({
         message: "Cannot assign task to yourself",
         status: BAD_REQUEST,
@@ -264,7 +264,7 @@ const createTask = async (request: NextRequest) => {
       title: title.trim(),
       description: description.trim(), // Keep HTML content
       assignedBy: {
-        userId: user.id,
+        userId: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -289,7 +289,7 @@ const createTask = async (request: NextRequest) => {
         taskId: (task._id as any).toString(),
         title: task.title,
         assignedBy: {
-          userId: user.id,
+          userId: user._id,
           name: user.name,
           email: user.email
         },
@@ -409,7 +409,7 @@ const createMultipleTasks = async (request: NextRequest) => {
           title: title.trim(),
           description: description.trim(), // Keep HTML content
           assignedBy: {
-            userId: user.id,
+            userId: user._id,
             name: user.name,
             email: user.email,
             role: user.role,
@@ -435,7 +435,7 @@ const createMultipleTasks = async (request: NextRequest) => {
             taskId: (task._id as any).toString(),
             title: task.title,
             assignedBy: {
-              userId: user.id,
+              userId: user._id,
               name: user.name,
               email: user.email
             },

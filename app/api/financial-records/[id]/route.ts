@@ -48,7 +48,7 @@ export async function PUT(
     await connectDB();
 const id = (await params).id
     const body = await request.json();
-      console.log(body)
+     
 
       const existingRecord:IFinancialRecord | null = await FinancialRecord.findById(id);
       if (!id || !existingRecord) {
@@ -61,7 +61,7 @@ const id = (await params).id
 
 const originalStatus = existingRecord.status?.toLowerCase()
 const newstatus = body.status?.toLowerCase()
-const statusChanged = newstatus !== originalStatus
+
     const updateData: any = {
       title: body.title || existingRecord.title ,
       description: body.description || existingRecord.description,

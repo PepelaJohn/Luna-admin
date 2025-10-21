@@ -32,7 +32,7 @@ const getAssignedToMeTasks = async (request: NextRequest) => {
 
     // Build query filters
     const filters: any = {
-      'assignedTo.userId': new mongoose.Types.ObjectId(user.id)
+      'assignedTo.userId': new mongoose.Types.ObjectId(user._id)
     };
 
     if (status && status !== 'all') {
@@ -80,7 +80,7 @@ const getAssignedToMeTasks = async (request: NextRequest) => {
     const taskCounts = await Task.aggregate([
       {
         $match: {
-          'assignedTo.userId': new mongoose.Types.ObjectId(user.id)
+          'assignedTo.userId': new mongoose.Types.ObjectId(user._id)
         }
       },
       {

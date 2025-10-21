@@ -42,7 +42,7 @@ async function updateUserHandler(request: NextRequest, context: { params: { id: 
     ).lean();
 
     // Log the update
-    const performedBy = (request as any).user.id; // From auth middleware
+    const performedBy = (request as any).user._id; // From auth middleware
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     const userAgent = request.headers.get('user-agent') || undefined;
 
@@ -119,7 +119,7 @@ async function deleteUserHandler(request: NextRequest, context: { params: { id: 
     await User.findByIdAndDelete(id);
 
     // Log the deletion
-    const performedBy = (request as any).user.id;
+    const performedBy = (request as any).user._id;
     const ip = request.headers.get('x-forwarded-for') || 'unknown';
     const userAgent = request.headers.get('user-agent') || undefined;
 

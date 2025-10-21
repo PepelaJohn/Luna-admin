@@ -51,8 +51,8 @@ const getTask = async (
     // Check if user can access this task
     if (
       user.role !== "super_admin" &&
-      task.assignedTo.userId.toString() !== user.id &&
-      task.assignedBy.userId.toString() !== user.id
+      task.assignedTo.userId.toString() !== user._id &&
+      task.assignedBy.userId.toString() !== user._id
     ) {
       return returnError({
         message: "Access denied",
@@ -109,7 +109,7 @@ const updateTask = async (
     }
 
     // Check if user can update this task
-    if (!task.canUserAccess(user.id, user.role)) {
+    if (!task.canUserAccess(user._id, user.role)) {
       return returnError({
         message: "Access denied",
         status: FORBIDDEN,
@@ -241,7 +241,7 @@ const updateTask = async (
             },
           },
           {
-            userId: user.id,
+            userId: user._id,
             name: user.name,
             email: user.email,
           },
@@ -308,7 +308,7 @@ const deleteTask = async (
     // Only the task creator or super admin can delete tasks
     if (
       user.role !== "super_admin" &&
-      task.assignedBy.userId.toString() !== user.id
+      task.assignedBy.userId.toString() !== user._id
     ) {
       return returnError({
         message: "Only the task creator or super admin can delete tasks",
@@ -347,7 +347,7 @@ const deleteTask = async (
           },
         },
         {
-          userId: user.id,
+          userId: user._id,
           name: user.name,
           email: user.email,
         },

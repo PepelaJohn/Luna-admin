@@ -13,6 +13,7 @@ const getTaskStats = async (request: NextRequest) => {
     await connectDB();
 
     const user = (request as any).user;
+    console.log(user)
     if (!user) {
       return returnError({
         message: "Not authorized",
@@ -25,8 +26,8 @@ const getTaskStats = async (request: NextRequest) => {
       ? {} 
       : {
           $or: [
-            { 'assignedTo.userId': new mongoose.Types.ObjectId(user.id) },
-            { 'assignedBy.userId': new mongoose.Types.ObjectId(user.id) }
+            { 'assignedTo.userId': new mongoose.Types.ObjectId(user._id) },
+            { 'assignedBy.userId': new mongoose.Types.ObjectId(user._id) }
           ]
         };
 
@@ -74,7 +75,7 @@ const getTaskStats = async (request: NextRequest) => {
             assignedToMe: {
               $sum: {
                 $cond: [
-                  { $eq: ['$assignedTo.userId', new mongoose.Types.ObjectId(user.id)] },
+                  { $eq: ['$assignedTo.userId', new mongoose.Types.ObjectId(user._id)] },
                   1,
                   0
                 ]
@@ -83,7 +84,7 @@ const getTaskStats = async (request: NextRequest) => {
             assignedByMe: {
               $sum: {
                 $cond: [
-                  { $eq: ['$assignedBy.userId', new mongoose.Types.ObjectId(user.id)] },
+                  { $eq: ['$assignedBy.userId', new mongoose.Types.ObjectId(user._id)] },
                   1,
                   0
                 ]
@@ -94,7 +95,7 @@ const getTaskStats = async (request: NextRequest) => {
                 $cond: [
                   {
                     $and: [
-                      { $eq: ['$assignedTo.userId', new mongoose.Types.ObjectId(user.id)] },
+                      { $eq: ['$assignedTo.userId', new mongoose.Types.ObjectId(user._id)] },
                       { $eq: ['$status', 'completed'] }
                     ]
                   },
@@ -108,7 +109,7 @@ const getTaskStats = async (request: NextRequest) => {
                 $cond: [
                   {
                     $and: [
-                      { $eq: ['$assignedTo.userId', new mongoose.Types.ObjectId(user.id)] },
+                      { $eq: ['$assignedTo.userId', new mongoose.Types.ObjectId(user._id)] },
                       { $in: ['$status', ['pending', 'in_progress']] }
                     ]
                   },

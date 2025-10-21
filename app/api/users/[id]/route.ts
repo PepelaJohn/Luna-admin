@@ -68,15 +68,15 @@ async function updateUserHandler(request: NextRequest) {
         status: 404,
       });
     }
-    console.log(currentUser.role, "1")
+    
     const oldRole = currentUser.role
-    console.log(oldRole, currentUser.role, "1")
+    
 
     const performingUser = (request as any).user as IUser;
 
     // Security checks
     // 1. Prevent self-modification
-    if (userId === performingUser.id) {
+    if (userId === performingUser._id) {
       return returnError({
         message: "You cannot modify your own account",
         status: 403,
@@ -196,7 +196,7 @@ async function updateUserHandler(request: NextRequest) {
 
     await Logger.logUserUpdate(
       userId,
-      performingUser.id,
+      performingUser._id,
       currentUser,
       updatedUser,
       ip,
@@ -274,7 +274,7 @@ async function deleteUserHandler(request: NextRequest) {
 
     // Security checks
     // 1. Prevent self-deletion
-    if (userId === performingUser.id) {
+    if (userId === performingUser._id) {
       return returnError({
         message: "You cannot delete yourself",
         status: 403,
@@ -330,7 +330,7 @@ async function deleteUserHandler(request: NextRequest) {
     const { ip, userAgent } = getClientInfo(request);
     await Logger.logUserDeletion(
       userId,
-      performingUser.id,
+      performingUser._id,
       userToDelete,
       ip,
       userAgent,

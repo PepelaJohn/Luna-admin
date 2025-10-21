@@ -46,7 +46,7 @@ const getTaskComments = async (request: NextRequest, { params }: { params: { id:
       return false;
     };
 
-    if (!canViewTask(user.role, task, user.id)) {
+    if (!canViewTask(user.role, task, user._id)) {
       return returnError({
         message: "Access Denied",
         status: FORBIDDEN
@@ -142,7 +142,7 @@ const addCommentsToTask = async (request: NextRequest, { params }: { params: { i
       return false;
     };
 
-    if (!canViewTask(user.role, task, user.id)) {
+    if (!canViewTask(user.role, task, user._id)) {
       return returnError({
         message: "Access Denied",
         status: FORBIDDEN
@@ -153,7 +153,7 @@ const addCommentsToTask = async (request: NextRequest, { params }: { params: { i
     const existingCommenters = NotificationService.getUniqueCommenters(task.comments);
 
     // Add comment using the instance method
-    await task.addComment(user.id, user.name, message.trim());
+    await task.addComment(user._id, user.name, message.trim());
 
     // Create notifications for comment
     try {
@@ -173,7 +173,7 @@ const addCommentsToTask = async (request: NextRequest, { params }: { params: { i
           }
         },
         {
-          userId: user.id,
+          userId: user._id,
           name: user.name,
           email: user.email
         },

@@ -27,9 +27,7 @@ const REDIRECT_ROUTES = {
 } as const;
 
 
-const handleCors = ()=>{
-  
-}
+
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -37,8 +35,7 @@ export async function middleware(request: NextRequest) {
   
   
   
-  // Early return if no token
-  console.log(pathname);
+ 
   if (!token) {
     console.log("[Middleware] No auth token found, redirecting to login");
 

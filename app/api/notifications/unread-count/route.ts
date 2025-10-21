@@ -22,7 +22,7 @@ const getUnreadCount = async (request: NextRequest) => {
 
     // Get unread count
     const unreadCount = await Notification.countDocuments({
-      'recipient.userId': new mongoose.Types.ObjectId(user.id),
+      'recipient.userId': new mongoose.Types.ObjectId(user._id),
       isRead: false,
       isArchived: false
     });
@@ -31,7 +31,7 @@ const getUnreadCount = async (request: NextRequest) => {
     const recentCounts = await Notification.aggregate([
       {
         $match: {
-          'recipient.userId': new mongoose.Types.ObjectId(user.id),
+          'recipient.userId': new mongoose.Types.ObjectId(user._id),
           isRead: false,
           isArchived: false,
           createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // Last 7 days

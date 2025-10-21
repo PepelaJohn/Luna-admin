@@ -29,7 +29,7 @@ const getNotifications = async (request: NextRequest) => {
 
     // Build query filters
     const filters: any = {
-      'recipient.userId': new mongoose.Types.ObjectId(user.id)
+      'recipient.userId': new mongoose.Types.ObjectId(user._id)
     };
 
     if (!includeRead) {
@@ -56,7 +56,7 @@ const getNotifications = async (request: NextRequest) => {
         .lean(),
       Notification.countDocuments(filters),
       Notification.countDocuments({
-        'recipient.userId': new mongoose.Types.ObjectId(user.id),
+        'recipient.userId': new mongoose.Types.ObjectId(user._id),
         isRead: false,
         isArchived: false
       })
@@ -172,7 +172,7 @@ const updateNotifications = async (request: NextRequest) => {
     const result = await Notification.updateMany(
       {
         _id: { $in: validIds.map(id => new mongoose.Types.ObjectId(id)) },
-        'recipient.userId': new mongoose.Types.ObjectId(user.id)
+        'recipient.userId': new mongoose.Types.ObjectId(user._id)
       },
       updateQuery
     );

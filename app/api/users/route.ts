@@ -294,7 +294,7 @@ async function bulkActionHandler(request: NextRequest) {
     const body = await request.json();
     const { action, userIds, reason } = bulkActionSchema.parse(body);
 
-    const performedBy = (request as any).user.id;
+    const performedBy = (request as any).user._id;
     const { ip, userAgent } = getClientInfo(request);
 
     // Get users before action for logging
@@ -447,7 +447,7 @@ async function updateUserHandler(request: NextRequest) {
     ).select('-password').lean();
 
     // Log the update
-    const performedBy = (request as any).user.id;
+    const performedBy = (request as any).user._id;
     const { ip, userAgent } = getClientInfo(request);
 
     await Logger.logUserUpdate(
@@ -546,7 +546,7 @@ async function deleteUserHandler(request: NextRequest) {
     const { ip, userAgent } = getClientInfo(request);
     await Logger.logUserDeletion(
       userId,
-      performingUser.id,
+      performingUser._id,
       userToDelete,
       ip,
       userAgent,
