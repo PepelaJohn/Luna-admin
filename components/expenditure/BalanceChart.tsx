@@ -8,29 +8,22 @@ interface BalanceChartProps {
 }
 
 export default function BalanceChart({ records }: BalanceChartProps) {
-  // Calculate monthly data
-  const monthlyData = records.reduce((acc, record) => {
-    const month = new Date(record.date).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short' 
-    });
-    
-    if (!acc[month]) {
-      acc[month] = { income: 0, expenses: 0 };
-    }
-    
-    if (record.type === 'income') {
-      acc[month].income += record.amount;
-    } else {
-      acc[month].expenses += record.amount;
-    }
-    
-    return acc;
-  }, {} as Record<string, { income: number; expenses: number }>);
+  // Calculate total income and expenses
+  const totals = records.reduce(
+    (acc, record) => {
+      if (record.type === 'income') {
+        acc.income += record.amount;
+      } else {
+        acc.expenses += record.amount;
+      }
+      return acc;
+    },
+    { income: 0, expenses: 0 }
+  );
 
-  const months = Object.keys(monthlyData).slice(-6); // Last 6 months
+  const total = totals.income + totals.expenses;
 
-  if (months.length === 0) {
+  if (total === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
         <p>No data available for chart</p>
@@ -38,51 +31,79 @@ export default function BalanceChart({ records }: BalanceChartProps) {
     );
   }
 
-  const maxValue = Math.max(
-    ...Object.values(monthlyData).map(d => Math.max(d.income, d.expenses))
-  );
+  // Calculate percentages and angles
+  const incomePercentage = (totals.income / total) * 100;
+  const expensesPercentage = (totals.expenses / total) * 100;
+
+  // For SVG pie chart using conic-gradient approach
+  const incomeAngle = (totals.income / total) * 360;
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-green-400 rounded"></div>
-            <span className="text-sm text-gray-600">Income</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-red-400 rounded"></div>
-            <span className="text-sm text-gray-600">Expenses</span>
-          </div>
+    <div className="space-y-6">
+      <div className="flex justify-center items-center gap-6">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-green-400 rounded"></div>
+          <span className="text-sm text-gray-600">Income</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-red-400 rounded"></div>
+          <span className="text-sm text-gray-600">Expenses</span>
         </div>
       </div>
 
-      <div className="flex items-end justify-between gap-2 h-48">
-        {months.map((month) => {
-          const { income, expenses } = monthlyData[month];
-          const incomeHeight = maxValue > 0 ? (income / maxValue) * 80 : 0;
-          const expensesHeight = maxValue > 0 ? (expenses / maxValue) * 80 : 0;
-
-          return (
-            <div key={month} className="flex flex-col items-center flex-1">
-              <div className="flex items-end justify-center gap-1 mb-2 h-32">
-                <div
-                  className="w-4 bg-green-400 rounded-t transition-all"
-                  style={{ height: `${incomeHeight}px` }}
-                />
-                <div
-                  className="w-4 bg-red-400 rounded-t transition-all"
-                  style={{ height: `${expensesHeight}px` }}
-                />
-              </div>
-              <span className="text-xs text-gray-600 text-center">{month}</span>
-              <div className="text-xs text-gray-500 mt-1 text-center">
-                <div>I: ${income.toLocaleString()}</div>
-                <div>E: ${expenses.toLocaleString()}</div>
+      <div className="flex flex-col items-center justify-center">
+        <div 
+          className="w-48 h-48 rounded-full relative"
+          style={{
+            background: `conic-gradient(
+              #4ade80 0deg ${incomeAngle}deg,
+              #f87171 ${incomeAngle}deg 360deg
+            )`
+          }}
+        >
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-800">
+                  ${total.toLocaleString()}
+                </div>
+                <div className="text-xs text-gray-500">Total</div>
               </div>
             </div>
-          );
-        })}
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-2 w-full max-w-xs">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-400 rounded"></div>
+              <span className="text-sm text-gray-700">Income</span>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-semibold text-gray-800">
+                ${totals.income.toLocaleString()}
+              </div>
+              <div className="text-xs text-gray-500">
+                {incomePercentage.toFixed(1)}%
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-400 rounded"></div>
+              <span className="text-sm text-gray-700">Expenses</span>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-semibold text-gray-800">
+                ${totals.expenses.toLocaleString()}
+              </div>
+              <div className="text-xs text-gray-500">
+                {expensesPercentage.toFixed(1)}%
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
