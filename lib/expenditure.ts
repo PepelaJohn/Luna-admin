@@ -651,6 +651,7 @@ export interface GetRecordsOptions {
   endDate?: string;
   page?: number;
   limit?: number;
+  status?:string;
 }
 
 export interface FinancialSummary {
@@ -670,6 +671,7 @@ export interface GetRecordsOptions {
   endDate?: string;
   page?: number;
   limit?: number;
+  status?:string;
 }
 
 export interface FinancialSummary {

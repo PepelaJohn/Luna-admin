@@ -575,6 +575,8 @@ export const financialRecordsApi = {
     return response.json();
   },
 
+  
+
   // Get a single financial record by ID
   async getById(id: string): Promise<ApiResponse<FinancialRecord>> {
     const response = await fetch(`${API_BASE}/${id}`);

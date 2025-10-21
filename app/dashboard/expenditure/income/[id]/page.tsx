@@ -155,7 +155,7 @@ export default function IncomeDetailPage() {
                   <User size={16} />
                   <span className="text-sm">Submitted By</span>
                 </div>
-                <p className="text-gray-900">{record.submittedBy}</p>
+                <p className="text-gray-900">{record?.submittedBy?.name}</p>
               </div>
               
               {record.approvedBy && (
@@ -164,7 +164,7 @@ export default function IncomeDetailPage() {
                     <CheckCircle size={16} />
                     <span className="text-sm">Approved By</span>
                   </div>
-                  <p className="text-gray-900">{record.approvedBy}</p>
+                  <p className="text-gray-900">{record.approvedBy.name}</p>
                 </div>
               )}
               

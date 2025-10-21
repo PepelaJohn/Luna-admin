@@ -11,10 +11,12 @@ async function getFinancialRecordsHandler(request: NextRequest) {
     await connectDB();
 
     const { searchParams } = new URL(request.url);
+    console.log(searchParams)
     const type = searchParams.get('type');
     const category = searchParams.get('category');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const status = searchParams.get('status')
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
 
@@ -22,6 +24,7 @@ async function getFinancialRecordsHandler(request: NextRequest) {
     const query: any = {};
     if (type) query.type = type;
     if (category) query.category = category;
+    if(status) query.status = status;
     if (startDate || endDate) {
       query.date = {};
       if (startDate) query.date.$gte = new Date(startDate);
