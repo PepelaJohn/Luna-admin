@@ -11,7 +11,7 @@ export default function FinancialStats({ summary }: FinancialStatsProps) {
   const stats = [
     {
       title: "Total Income",
-      value: `$${summary?.totalIncome?.toLocaleString()  }`,
+      value: `KES ${summary?.totalIncome?.toLocaleString()  }`,
       icon: TrendingUp,
       color: "text-green-600",
       bgColor: "bg-green-50",
@@ -19,7 +19,7 @@ export default function FinancialStats({ summary }: FinancialStatsProps) {
     },
     {
       title: "Total Expenses",
-      value: `$${summary?.totalExpenditure?.toLocaleString()}`,
+      value: `KES ${summary?.totalExpenditure?.toLocaleString()}`,
       icon: TrendingDown,
       color: "text-red-600",
       bgColor: "bg-red-50",
@@ -27,7 +27,7 @@ export default function FinancialStats({ summary }: FinancialStatsProps) {
     },
     {
       title: "Net Balance",
-      value: `$${summary?.balance?.toLocaleString()}`,
+      value: `KES ${summary?.balance?.toLocaleString()}`,
       icon: DollarSign,
       color: summary?.balance >= 0 ? "text-green-600" : "text-red-600",
       bgColor: summary?.balance >= 0 ? "bg-green-50" : "bg-red-50",
@@ -35,7 +35,7 @@ export default function FinancialStats({ summary }: FinancialStatsProps) {
     },
     {
       title: "Available Budget",
-      value: `$${summary?.availableBudget?.toLocaleString()}`,
+      value: `KES ${summary?.availableBudget?.toLocaleString()}`,
       icon: AlertCircle,
       color: summary?.availableBudget > 0 ? "text-blue-600" : "text-orange-600",
       bgColor: summary?.availableBudget > 0 ? "bg-blue-50" : "bg-orange-50",

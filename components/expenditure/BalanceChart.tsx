@@ -22,6 +22,7 @@ export default function BalanceChart({ records }: BalanceChartProps) {
   );
 
   const total = totals.income + totals.expenses;
+  
 
   if (total === 0) {
     return (
@@ -65,7 +66,8 @@ export default function BalanceChart({ records }: BalanceChartProps) {
             <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center">
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-800">
-                  ${total.toLocaleString()}
+                  <span className=" text-xs">KES </span> 
+                  {total}
                 </div>
                 <div className="text-xs text-gray-500">Total</div>
               </div>
