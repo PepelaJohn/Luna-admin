@@ -23,13 +23,14 @@ export const exportToCSV = (
     'Category',
     'Status',
     'Submitted By',
+    'Submitted By Email',
     'Date Submitted',
     'Date Approved',
     'Date Paid',
-    'Approved By'
+    'Approved By',
+    'Approved By Email'
   ];
 
- 
   const escapeCSVValue = (value: string | number | undefined | null): string => {
     if (value === null || value === undefined) return '';
     const stringValue = value.toString();
@@ -51,6 +52,20 @@ export const exportToCSV = (
     }
   };
 
+  // Helper function to extract user name from object or string
+  const getUserName = (user: { name: string; _id: string; email: string } | string | undefined): string => {
+    if (!user) return '';
+    if (typeof user === 'string') return user;
+    return user.name || '';
+  };
+
+  // Helper function to extract user email from object
+  const getUserEmail = (user: { name: string; _id: string; email: string } | string | undefined): string => {
+    if (!user) return '';
+    if (typeof user === 'string') return '';
+    return user.email || '';
+  };
+
   // Convert records to CSV rows
   const csvRows = records.map(record => [
     escapeCSVValue(formatDateSafely(record.date)),
@@ -61,11 +76,13 @@ export const exportToCSV = (
     escapeCSVValue(record.currency),
     escapeCSVValue(record.category),
     escapeCSVValue(record.status),
-    escapeCSVValue(record.submittedBy),
+    escapeCSVValue(getUserName(record.submittedBy)),
+    escapeCSVValue(getUserEmail(record.submittedBy)),
     escapeCSVValue(formatDateSafely(record.dateSubmitted)),
     escapeCSVValue(formatDateSafely(record.dateApproved)),
     escapeCSVValue(formatDateSafely(record.datePaid)),
-    escapeCSVValue(record.approvedBy)
+    escapeCSVValue(getUserName(record.approvedBy)),
+    escapeCSVValue(getUserEmail(record.approvedBy))
   ]);
 
   // Create CSV content
@@ -146,6 +163,13 @@ export const exportToPDF = async (
       if (amount === null || amount === undefined) return '$0';
       return `$${amount.toLocaleString()}`;
     };
+
+    // Helper function to extract user name from object or string
+    const getUserName = (user: { name: string; _id: string; email: string } | string | undefined): string => {
+      if (!user) return 'N/A';
+      if (typeof user === 'string') return user;
+      return user.name || 'N/A';
+    };
     
     // Add header
     doc.setFontSize(20);
@@ -174,7 +198,7 @@ export const exportToPDF = async (
       const summaryData: Array<[string, string, [number, number, number]]> = [
         ['Total Income', formatCurrency(summary.totalIncome), greenColor],
         ['Total Expenses', formatCurrency(summary.totalExpenditure), redColor],
-        ['Net Balance', formatCurrency(summary.balance), summary.balance   >= 0 ? greenColor : redColor],
+        ['Net Balance', formatCurrency(summary.balance), summary.balance >= 0 ? greenColor : redColor],
         ['Available Budget', formatCurrency(summary.availableBudget), primaryColor]
       ];
       
@@ -201,8 +225,8 @@ export const exportToPDF = async (
     yPosition += 15;
     
     // Table configuration
-    const tableHeaders = ['Date', 'Type', 'Title', 'Amount', 'Category', 'Status'];
-    const colWidths = [30, 25, 60, 30, 30, 25]; // Column widths
+    const tableHeaders = ['Date', 'Type', 'Title', 'Amount', 'Category', 'Status', 'Submitted'];
+    const colWidths = [25, 20, 45, 25, 25, 20, 30]; // Column widths
     const rowHeight = 8;
     const startX = 20;
     let currentY = yPosition;
@@ -265,10 +289,11 @@ export const exportToPDF = async (
       const rowData = [
         formatDateForPDF(record.date),
         record.type ? record.type.charAt(0).toUpperCase() + record.type.slice(1) : 'N/A',
-        truncateText(record.title, 20),
+        truncateText(record.title, 18),
         formatCurrency(record.amount),
-        truncateText(record.category, 12),
-        record.status ? record.status.charAt(0).toUpperCase() + record.status.slice(1) : 'N/A'
+        truncateText(record.category, 10),
+        record.status ? record.status.charAt(0).toUpperCase() + record.status.slice(1) : 'N/A',
+        truncateText(getUserName(record.submittedBy), 12)
       ];
       
       currentX = startX;

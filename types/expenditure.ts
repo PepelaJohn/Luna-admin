@@ -11,8 +11,16 @@ export interface FinancialRecord {
   dateSubmitted: Date ;
   dateApproved?: Date;
   datePaid?: Date;
-  submittedBy: string;
-  approvedBy?: string;
+  submittedBy?: {
+    name:string,
+    _id:string,
+    email:string
+  };
+  approvedBy?: {
+    name:string,
+    _id:string,
+    email:string
+  };
   attachments: Attachment[];
   notes?: string;
   createdAt?: Date;

@@ -1,9 +1,9 @@
 // models/FinancialRecord.ts
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Query } from 'mongoose';
 import { Types } from 'mongoose';
 
 export interface IFinancialRecord extends Document {
-  _id:string;
+  _id: string;
   title: string;
   description: string;
   amount: number;
@@ -13,8 +13,16 @@ export interface IFinancialRecord extends Document {
   notes?: string;
   type: 'income' | 'expenditure';
   status?: 'draft' | 'pending' | 'approved' | 'rejected' | 'paid';
-  submittedBy?: string;
-  approvedBy?: string;
+  submittedBy?: Types.ObjectId | {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  approvedBy?: Types.ObjectId | {
+    _id: string;
+    name: string;
+    email: string;
+  };
   dateSubmitted?: Date;
   dateApproved?: Date;
   datePaid?: Date;
@@ -52,7 +60,6 @@ const FinancialRecordSchema = new Schema<IFinancialRecord>(
     category: {
       type: String,
       required: [true, 'Category is required'],
-      
     },
     date: {
       type: Date,
@@ -73,14 +80,12 @@ const FinancialRecordSchema = new Schema<IFinancialRecord>(
       default: 'pending',
     },
     submittedBy: {
-      type: Types.ObjectId ,
-      ref:"User",
-      trim: true,
+      type: Schema.Types.ObjectId,
+      ref: 'User',
     },
     approvedBy: {
-      type: Types.ObjectId ,
-      ref:"User",
-      trim: true,
+      type: Schema.Types.ObjectId,
+      ref: 'User',
     },
     dateSubmitted: {
       type: Date,
@@ -111,6 +116,33 @@ const FinancialRecordSchema = new Schema<IFinancialRecord>(
 FinancialRecordSchema.index({ type: 1, date: -1 });
 FinancialRecordSchema.index({ category: 1 });
 FinancialRecordSchema.index({ status: 1 });
+
+// Auto-populate user references on find queries
+FinancialRecordSchema.pre(/^find/, function (this: Query<any, any>, next) {
+  this.populate({
+    path: 'submittedBy',
+    select: 'name email _id',
+  }).populate({
+    path: 'approvedBy',
+    select: 'name email _id',
+  });
+  next();
+});
+
+// Auto-populate user references on findOne queries
+FinancialRecordSchema.post('save', async function (doc, next) {
+  await doc.populate([
+    {
+      path: 'submittedBy',
+      select: 'name email _id',
+    },
+    {
+      path: 'approvedBy',
+      select: 'name email _id',
+    },
+  ]);
+  next();
+});
 
 export default mongoose.models.FinancialRecord ||
   mongoose.model<IFinancialRecord>('FinancialRecord', FinancialRecordSchema);

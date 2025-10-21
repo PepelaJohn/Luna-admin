@@ -58,7 +58,7 @@ export default function ExpenditureDashboard() {
           dateSubmitted: record.dateSubmitted as unknown as string,
           dateApproved: record.dateApproved as unknown as string,
           datePaid: record.datePaid as unknown as string,
-          submittedBy: record.submittedBy,
+          submittedBy: record.submittedBy?.name ?? '',
           approvedBy: record.approvedBy,
           notes: record.notes,
           createdAt: record.createdAt as unknown as string,
