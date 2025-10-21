@@ -1,5 +1,6 @@
 // models/FinancialRecord.ts
 import mongoose, { Schema, Document } from 'mongoose';
+import { Types } from 'mongoose';
 
 export interface IFinancialRecord extends Document {
   _id:string;
@@ -72,11 +73,13 @@ const FinancialRecordSchema = new Schema<IFinancialRecord>(
       default: 'pending',
     },
     submittedBy: {
-      type: String,
+      type: Types.ObjectId ,
+      ref:"User",
       trim: true,
     },
     approvedBy: {
-      type: String,
+      type: Types.ObjectId ,
+      ref:"User",
       trim: true,
     },
     dateSubmitted: {

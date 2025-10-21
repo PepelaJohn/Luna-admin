@@ -19,7 +19,7 @@ async function getFinancialRecordHandler(
   try {
     await connectDB();
     const id = (await params).id;
-    const record = await FinancialRecord.findById(id);
+    const record = await FinancialRecord.findById(id).populate('submittedBy', 'name email _id');
 
     if (!record) {
       return NextResponse.json(
