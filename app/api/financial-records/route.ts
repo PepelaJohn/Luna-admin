@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import FinancialRecord from '@/models/FinancialRecord';
 import { connectDB } from '@/lib/db';
 import { IUser } from '@/models/User';
+import { withAuth } from '@/lib/api-middleware';
 
 // GET - List all financial records with optional filters
-export async function GET(request: NextRequest) {
+async function getFinancialRecordsHandler(request: NextRequest) {
   try {
     await connectDB();
 
@@ -58,21 +59,13 @@ export async function GET(request: NextRequest) {
 }
 
 // POST - Create a new financial record
-export async function POST(request: NextRequest) {
+async function createFinancialRecordHandler(request: NextRequest) {
   try {
     await connectDB();
 
     const body = await request.json();
     const user = (request as any).user as IUser;
-    const userId = user?._id;
-
-    // Check authentication
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized - User not authenticated' },
-        { status: 401 }
-      );
-    }
+    const userId = user._id;
 
     // Check authorization
     if (user.role !== 'super_admin' && user.role !== 'admin') {
@@ -121,3 +114,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Export with middleware
+export const GET = withAuth(getFinancialRecordsHandler);
+export const POST = withAuth(createFinancialRecordHandler);

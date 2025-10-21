@@ -1,7 +1,9 @@
 // app/api/financial-records/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import FinancialRecord , {IFinancialRecord} from '@/models/FinancialRecord';
+import FinancialRecord, { IFinancialRecord } from '@/models/FinancialRecord';
 import { connectDB } from '@/lib/db';
+import { IUser } from '@/models/User';
+import { withAuth } from '@/lib/api-middleware';
 
 interface RouteParams {
   params: Promise<{
@@ -10,13 +12,13 @@ interface RouteParams {
 }
 
 // GET - Fetch a single financial record
-export async function GET(
+async function getFinancialRecordHandler(
   request: NextRequest,
   { params }: RouteParams
 ) {
   try {
     await connectDB();
-    const id = (await params).id
+    const id = (await params).id;
     const record = await FinancialRecord.findById(id);
 
     if (!record) {
@@ -40,48 +42,71 @@ export async function GET(
 }
 
 // PUT - Update a financial record
-export async function PUT(
+async function updateFinancialRecordHandler(
   request: NextRequest,
   { params }: RouteParams
 ) {
   try {
     await connectDB();
-const id = (await params).id
+    const id = (await params).id;
     const body = await request.json();
-     
+    const user = (request as any).user as IUser;
+    const userId = user._id;
 
-      const existingRecord:IFinancialRecord | null = await FinancialRecord.findById(id);
-      if (!id || !existingRecord) {
-        return NextResponse.json(
-          { success: false, error: 'Financial record not found' },
-          { status: 404 }
-        );
-      }
-    // Extract update data
-
-const originalStatus = existingRecord.status?.toLowerCase()
-const newstatus = body.status?.toLowerCase()
-
-    const updateData: any = {
-      title: body.title || existingRecord.title ,
-      description: body.description || existingRecord.description,
-      amount: parseFloat(body.amount) || existingRecord.amount,
-      currency: body.currency|| existingRecord.currency || 'USD',
-      category: body.category || existingRecord.category,
-      date: new Date(body.dateApproved) || existingRecord.date,
-      dateApproved: originalStatus !=='approved'&& newstatus === 'approved' ? new Date(body.dateApproved) : existingRecord.dateApproved,
-      notes: body.notes || existingRecord.notes || '',
-      type: body.type || existingRecord.type,
-      status:body.status || existingRecord.status
-    };
+    // Check authorization
+    if (user.role !== 'super_admin' && user.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized - Insufficient permissions' },
+        { status: 403 }
+      );
+    }
 
     // Fetch existing record
-    
+    const existingRecord: IFinancialRecord | null = await FinancialRecord.findById(id);
+    if (!existingRecord) {
+      return NextResponse.json(
+        { success: false, error: 'Financial record not found' },
+        { status: 404 }
+      );
+    }
+
+    // Track status changes
+    const originalStatus = existingRecord.status?.toLowerCase();
+    const newStatus = body.status?.toLowerCase();
+    const statusChanged = newStatus && originalStatus !== newStatus;
+
+    // Build update data
+    const updateData: any = {
+      title: body.title ?? existingRecord.title,
+      description: body.description ?? existingRecord.description,
+      amount: body.amount !== undefined ? parseFloat(body.amount) : existingRecord.amount,
+      currency: body.currency ?? existingRecord.currency,
+      category: body.category ?? existingRecord.category,
+      date: body.date ? new Date(body.date) : existingRecord.date,
+      notes: body.notes ?? existingRecord.notes,
+      type: body.type ?? existingRecord.type,
+      status: body.status ?? existingRecord.status,
+    };
+
+    // Track approval
+    if (statusChanged && newStatus === 'approved') {
+      updateData.approvedBy = userId;
+      updateData.dateApproved = new Date();
+    }
+
+    // Track payment
+    if (statusChanged && newStatus === 'paid') {
+      updateData.datePaid = new Date();
+      // If not already approved, set approval info
+      if (originalStatus !== 'approved' && !existingRecord.approvedBy) {
+        updateData.approvedBy = userId;
+        updateData.dateApproved = new Date();
+      }
+    }
 
     // Handle attachments
     const keepExisting = body.keepExistingAttachments !== false;
     let attachments = keepExisting ? [...(existingRecord.attachments ?? [])] : [];
-
 
     // Add new attachments if provided
     if (body.attachments && Array.isArray(body.attachments)) {
@@ -112,13 +137,23 @@ const newstatus = body.status?.toLowerCase()
 }
 
 // DELETE - Delete a financial record
-export async function DELETE(
+async function deleteFinancialRecordHandler(
   request: NextRequest,
   { params }: RouteParams
 ) {
   try {
     await connectDB();
-    const id = (await params).id
+    const id = (await params).id;
+    const user = (request as any).user as IUser;
+
+    // Check authorization - only super_admin can delete
+    if (user.role !== 'super_admin') {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized - Only super admins can delete records' },
+        { status: 403 }
+      );
+    }
+
     const record = await FinancialRecord.findById(id);
 
     if (!record) {
@@ -128,7 +163,6 @@ export async function DELETE(
       );
     }
 
-    // Note: Attachments are stored on ImgBB, so no need to delete local files
     await FinancialRecord.findByIdAndDelete(id);
 
     return NextResponse.json({
@@ -143,3 +177,8 @@ export async function DELETE(
     );
   }
 }
+
+// Export with middleware
+export const GET = withAuth(getFinancialRecordHandler);
+export const PUT = withAuth(updateFinancialRecordHandler);
+export const DELETE = withAuth(deleteFinancialRecordHandler);

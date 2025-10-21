@@ -20,6 +20,7 @@ const getTasks = async (request: NextRequest) => {
     await connectDB();
 
     const user = (request as any).user;
+    
     if (!user) {
       return returnError({
         message: "Not authorized",
