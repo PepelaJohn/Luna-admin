@@ -3,44 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import FinancialRecord from '@/models/FinancialRecord';
 import { connectDB } from '@/lib/db';
 import { IUser } from '@/models/User';
-/* 
-export interface IUser extends Document {
-  _id:string;
-  name: string;
-  email: string;
-  password?: string;
-  role: "normal" | "corporate" | "admin" | "super_admin" | 'moderator';
-  isEmailVerified: boolean;
-  isActive: boolean;
-  _id:string;
-  providers: {
-    google?: {
-      id: string;
-      email: string;
-    };
-    apple?: {
-      id: string;
-      email: string;
-    };
-    facebook?: {
-      id: string;
-      email: string;
-    };
-  };
-  multifactorAuthentication?: boolean;
-  phone: string;
-  avatar?: string;
-  sessionVersion: number;
-  passwordChangedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  lastLogin?: Date;
-  comparePassword(candidatePassword: string): Promise<boolean>;
-  incrementSessionVersion(): Promise<void>;
-  isPasswordChangedAfter(timestamp: Date): boolean;
-}
 
-*/
 // GET - List all financial records with optional filters
 export async function GET(request: NextRequest) {
   try {
@@ -100,19 +63,22 @@ export async function POST(request: NextRequest) {
     await connectDB();
 
     const body = await request.json();
-    const user = (request as any).user as IUser;;
-    const userId = user._id;
-    if(!userId) {
+    const user = (request as any).user as IUser;
+    const userId = user?._id;
+
+    // Check authentication
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized - User not authenticated' },
         { status: 401 }
       );
     }
 
-    if(user.role !== 'super_admin' && user.role !== 'admin') {
+    // Check authorization
+    if (user.role !== 'super_admin' && user.role !== 'admin') {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: 'Unauthorized - Insufficient permissions' },
+        { status: 403 }
       );
     }
     
@@ -124,10 +90,13 @@ export async function POST(request: NextRequest) {
       currency: body.currency || 'USD',
       category: body.category,
       date: new Date(body.date),
-      submittedBy: userId,
       notes: body.notes || '',
       type: body.type,
-      attachments: body.attachments || [], // Attachments with imgbb URLs
+      status: body.status || 'pending',
+      attachments: body.attachments || [],
+      // Track creation
+      submittedBy: userId,
+      dateSubmitted: new Date(),
     };
 
     // Create the record
